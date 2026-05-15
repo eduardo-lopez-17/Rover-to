@@ -26,6 +26,8 @@ typedef struct __attribute__((packed)) {
 
 SensorPayload misDatosDSP;
 
+// COMENTARIO
+
 // Dirección MAC del Receptor
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 esp_now_peer_info_t peerInfo;
