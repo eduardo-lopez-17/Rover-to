@@ -16,27 +16,20 @@ SensorPayload datosRecibidos;
 
 // 2. FUNCIÓN DE RECEPCIÓN (Versión clásica para PlatformIO Core v2.x)
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  
-  // Verificamos que el paquete que llegó tenga el tamaño exacto de nuestra estructura
   if (len == sizeof(SensorPayload)) {
-    
-    // Copiamos los bytes crudos a nuestra estructura para decodificarlos
     memcpy(&datosRecibidos, incomingData, sizeof(datosRecibidos));
     
-    // Imprimimos los datos decodificados en el Monitor Serie
-    Serial.print("Tiempo: "); 
+    // Formato CSV: más ligero y fácil de leer para Python
+    // timestamp, pos_X, pos_Y, yaw_angle, anomaly
     Serial.print(datosRecibidos.timestamp);
-    Serial.print(" ms | X: "); 
-    Serial.print(datosRecibidos.pos_X, 2); 
-    Serial.print(" | Y: "); 
-    Serial.print(datosRecibidos.pos_Y, 2);
-    Serial.print(" | Yaw: "); 
+    Serial.print(",");
+    Serial.print(datosRecibidos.pos_X, 4); // 4 decimales para mayor precisión en integración
+    Serial.print(",");
+    Serial.print(datosRecibidos.pos_Y, 4);
+    Serial.print(",");
     Serial.print(datosRecibidos.yaw_angle, 2);
-    Serial.print(" | Alerta: "); 
+    Serial.print(",");
     Serial.println(datosRecibidos.anomaly);
-    
-  } else {
-    Serial.println("Error: Tamaño de paquete incorrecto.");
   }
 }
 
