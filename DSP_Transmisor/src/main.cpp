@@ -47,7 +47,6 @@ void TareaDSPCode(void *pvParameters)
 
             switch (sensorValue.sensorId)
             {
-
             case SH2_LINEAR_ACCELERATION:
                 misDatosDSP.pos_X = sensorValue.un.linearAcceleration.x;
                 misDatosDSP.pos_Y = sensorValue.un.linearAcceleration.y;
