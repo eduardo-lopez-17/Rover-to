@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <esp_now.h>
 #include "ultrasonico.h"
+#include "moist.h"
 
 // Estructura de datos idéntica a la que usarás con la IA/Gemelo Digital
 typedef struct __attribute__((packed)) {
