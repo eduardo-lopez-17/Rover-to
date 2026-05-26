@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <esp_now.h>
 #include "ultrasonico.h"
+#include "moist.h"
 #include "gps_modulo.h" // <-- 1. IMPORTAMOS TU NUEVO ARCHIVO GPS
 
 // Estructura de datos unificada que viajará por el aire hacia la aplicación e IA

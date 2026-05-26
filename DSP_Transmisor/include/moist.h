@@ -13,9 +13,11 @@ class Moist
         Moist(uint8_t sensor_pin);
         void init_moisture_sensor(uint8_t sensor_pin);
         uint16_t get_moisture_level();
+        void init_task();
 
     private:
         uint8_t MOISTURE_SENSOR_PIN;
+        void task(void *pvParameters);
 };
 
 #endif

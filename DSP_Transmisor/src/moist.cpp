@@ -23,3 +23,27 @@ uint16_t Moist::get_moisture_level()
     uint16_t moisture_level = analogRead(MOISTURE_SENSOR_PIN);
     return moisture_level;
 }
+
+void Moist::init_task()
+{
+    // Code to initialize the task for reading moisture levels
+    xTaskCreate(
+        [](void *pvParameters) { static_cast<Moist *>(pvParameters)->task(pvParameters); },
+        "MoistureTask",
+        2048,
+        this,
+        1,
+        nullptr);
+}
+
+void Moist::task(void *pvParameters)
+{
+    for (;;)
+    {
+        // This function can be called in a loop or as a task to continuously read moisture levels
+        uint16_t current_moisture = get_moisture_level();
+        // You can add code here to process the moisture level, such as sending it via ESP-NOW or logging it
+        
+        vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second before the next reading
+    }
+}
