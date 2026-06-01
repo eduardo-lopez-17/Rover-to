@@ -5,97 +5,109 @@
 #include "moist.h"
 #include "gps_modulo.h" 
 #include "bme280_modulo.h" 
-#include "sim800_modulo.h" // <-- 1. IMPORTAMOS EL CELULAR
+#include "sim800_modulo.h" 
 
-// Estructura de datos unificada
+// --- UNIFIED DATA PAYLOAD (Matches the Receiver exactly) ---
 typedef struct __attribute__((packed)) {
   uint32_t timestamp;
-  float pos_X;       
-  float pos_Y;       
+  float pos_x;       
+  float pos_y;       
   float yaw_angle;   
-  float distancia;   
+  float distance;   
   float gps_lat;     
   float gps_lng;     
-  float temp_amb;    
-  float hum_amb;     
-  float pres_amb;    
+  float env_temp;    
+  float env_hum;     
+  float env_pres;    
   uint8_t anomaly;   
+  uint8_t vision_obj_id;      // <-- Added for XIAO AI integration
+  uint8_t vision_confidence;  // <-- Added for XIAO AI integration
 } SensorPayload;
 
-SensorPayload datosAMandar;
+SensorPayload txData;
 
-uint8_t macReceptor[] = {0x78, 0x1C, 0x3C, 0xDA, 0x3D, 0xB8}; 
+// Receiver MAC Address
+uint8_t receiverMac[] = {0x78, 0x1C, 0x3C, 0xDA, 0x3D, 0xB8}; 
 esp_now_peer_info_t peerInfo;
 
-// Temporizador para no saturar el celular
-uint32_t ultimoEnvioCelular = 0; 
+// Timers
+uint32_t lastCellularSendTime = 0; 
 
+// --- ESP-NOW CALLBACK ---
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  // Callback de ESP-NOW (comentado para no ensuciar la consola)
+  // Serial.print("\r[ESP-NOW] Send Status: ");
+  // Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
 }
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  Serial.println("=== TRANSMISOR TELECOM UNIFICADO ===");
+  Serial.println("=== TELECOM TRANSMITTER INITIALIZED ===");
 
   Wire.begin(); // SDA=21, SCL=22
 
+  // Initialize modular peripherals
   inicializarUltrasonico();
   inicializarGPS(); 
   inicializarBME(); 
-  inicializarCelular(); // <-- 2. INICIALIZAMOS EL CELULAR
+  inicializarCelular(); 
 
+  // Network configuration
   WiFi.mode(WIFI_STA);
   esp_now_init();
   esp_now_register_send_cb(OnDataSent);
   
-  memcpy(peerInfo.peer_addr, macReceptor, 6);
+  memcpy(peerInfo.peer_addr, receiverMac, 6);
   peerInfo.channel = 0;  
   peerInfo.encrypt = false;
   esp_now_add_peer(&peerInfo);
 }
 
 void loop() {
-  datosAMandar.timestamp = millis();
+  txData.timestamp = millis();
   
-  // 1. Recolección de datos modulares
-  datosAMandar.distancia = obtenerDistancia(); 
+  // 1. Data Collection
+  txData.distance = obtenerDistancia(); 
 
   GPSData infoGPS = obtenerDatosGPS();
-  datosAMandar.gps_lat = infoGPS.latitud;
-  datosAMandar.gps_lng = infoGPS.longitud;
+  txData.gps_lat = infoGPS.latitud;
+  txData.gps_lng = infoGPS.longitud;
 
   BMEData infoBME = obtenerDatosBME(); 
-  datosAMandar.temp_amb = infoBME.temperatura;
-  datosAMandar.hum_amb = infoBME.humedad;
-  datosAMandar.pres_amb = infoBME.presion;
+  txData.env_temp = infoBME.temperatura;
+  txData.env_hum = infoBME.humedad;
+  txData.env_pres = infoBME.presion;
 
-  datosAMandar.pos_X = 0.0; 
-  datosAMandar.pos_Y = 0.0;
-  datosAMandar.yaw_angle = 0.0;
-  datosAMandar.anomaly = (datosAMandar.distancia < 15.0 && datosAMandar.distancia > 0) ? 1 : 0;
+  // 2. Dummy data for DSP and Vision (Until sensors are connected)
+  txData.pos_x = 0.0; 
+  txData.pos_y = 0.0;
+  txData.yaw_angle = 0.0;
+  txData.vision_obj_id = 0; 
+  txData.vision_confidence = 0;
+  
+  // Collision/Anomaly logic
+  txData.anomaly = (txData.distance < 15.0 && txData.distance > 0) ? 1 : 0;
 
-  // 2. Transmisión local rápida (ESP-NOW a la OLED)
-  esp_now_send(macReceptor, (uint8_t *) &datosAMandar, sizeof(datosAMandar));
+  // 3. Fast Local Transmission (ESP-NOW to OLED)
+  esp_now_send(receiverMac, (uint8_t *) &txData, sizeof(txData));
 
-// 3. Transmisión Lenta a la Nube (Cada 10 segundos)
-  if (millis() - ultimoEnvioCelular > 10000) {
+  // 4. Slow Cloud Transmission (Every 10 seconds via Cellular)
+  if (millis() - lastCellularSendTime > 10000) {
       
-      // Armamos el JSON con la sintaxis exacta para Ubidots
+      // Build JSON Payload for Ubidots (Using English keys)
       String payload = "{";
-      payload += "\"temperatura\":" + String(datosAMandar.temp_amb) + ",";
-      payload += "\"humedad\":" + String(datosAMandar.hum_amb) + ",";
-      payload += "\"presion\":" + String(datosAMandar.pres_amb) + ",";
-      payload += "\"distancia\":" + String(datosAMandar.distancia) + ",";
+      payload += "\"temperature\":" + String(txData.env_temp) + ",";
+      payload += "\"humidity\":" + String(txData.env_hum) + ",";
+      payload += "\"pressure\":" + String(txData.env_pres) + ",";
+      payload += "\"distance\":" + String(txData.distance) + ",";
       
-      // Formato especial de Ubidots para que se grafique en el mapa:
-      payload += "\"gps\":{\"value\":1, \"context\":{\"lat\":" + String(datosAMandar.gps_lat, 6) + ", \"lng\":" + String(datosAMandar.gps_lng, 6) + "}}";
+      // Ubidots Map formatting context:
+      payload += "\"gps\":{\"value\":1, \"context\":{\"lat\":" + String(txData.gps_lat, 6) + ", \"lng\":" + String(txData.gps_lng, 6) + "}}";
       payload += "}";
       
       enviarDatosNube(payload);
-      ultimoEnvioCelular = millis();
+      lastCellularSendTime = millis();
   }
   
-  delay(500); // Retardo base del ciclo
+  delay(500); // Base loop delay
 }
