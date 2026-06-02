@@ -5,9 +5,8 @@
 #include <TinyGPS++.h>
 
 // --- CONFIGURACIÓN DE PINES (Serial 2) ---
-#define RXD2 16
-#define TXD2 17
-#define GPS_BAUD 9600
+#define GPS_RX_PIN D6  // Pin que lee los datos del NEO-6M
+#define GPS_TX_PIN -1  // ¡EL TRUCO! -1 deshabilita la transmisión y libera el pin
 
 // =========================================================================
 // INTERRUPTOR DE ACTIVACIÓN (Ponlo en true cuando conectes el GPS real)

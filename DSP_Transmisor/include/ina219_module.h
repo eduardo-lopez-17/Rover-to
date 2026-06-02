@@ -6,6 +6,9 @@
 // --- ACTIVATION SWITCH ---
 #define USE_INA219 false
 
+#define I2C_SDA D4
+#define I2C_SCL D5
+
 typedef struct {
     float bus_voltage;
     float current_mA;

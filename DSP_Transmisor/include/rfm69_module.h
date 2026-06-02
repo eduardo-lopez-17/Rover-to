@@ -6,11 +6,11 @@
 // --- ACTIVATION SWITCH ---
 #define USE_RFM69 false
 
-// --- SPI PINS FOR ESP32 ---
-// The module uses standard VSPI (MOSI=23, MISO=19, SCK=18)
-#define RFM69_CS    5   // Chip Select
-#define RFM69_INT   34  // Interrupt / DIO0
-#define RFM69_RST   33  // Hard Reset Pin
+// Pines SPI y control para el XIAO ESP32-S3
+#define RFM69_CS    D1  // Según tu esquemático (J1 Pin 2)
+#define RFM69_INT   D7  // El pin que le robaste al TX del GPS (J2 Pin 7)
+#define RFM69_RST   -1  // En tu esquemático no veo cable de RESET, así que lo ignoramos
+
 
 // Set your bought frequency
 #define RF69_FREQ   915.0

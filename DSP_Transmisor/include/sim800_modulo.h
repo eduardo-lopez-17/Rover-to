@@ -15,8 +15,9 @@
 #define PASS_CELULAR "webgprs2002"
 
 // --- CONFIGURACIÓN DE PINES (Hardware Serial 1) ---
-#define SIM800_RX 4  
-#define SIM800_TX 2 
+#define SIM800_RX_PIN D3 // Según tu esquemático TXS (J1 Pin 4)
+#define SIM800_TX_PIN D2 // Según tu esquemático RXS (J1 Pin 3)
+
 #define SIM800_BAUD 9600
 
 void inicializarCelular();

@@ -2,20 +2,20 @@
 #define BH1750_MODULO_H
 
 #include <Arduino.h>
-#include <Wire.h>
-#include <BH1750.h>
 
 // Asignación automática de pines I2C según la placa
 #ifdef ARDUINO_USB_MODE
-    #define I2C_SDA 8  // Pines para el ESP32-S3
-    #define I2C_SCL 9
+    // Pines I2C compartidos para el XIAO ESP32-S3 (Según tu esquemático)
+    #define I2C_SDA D4 
+    #define I2C_SCL D5
 #else
-    #define I2C_SDA 21 // Pines I2C por defecto en ESP32 Steren
+    // Pines I2C por defecto en ESP32 Steren
+    #define I2C_SDA 21 
     #define I2C_SCL 22
 #endif
 
-// Interruptor DNP (Ponlo en false si desconectas el sensor)
-#define USAR_LUZ true  
+// Interruptor DNP (Ponlo en false para la prueba de "Cerebro Limpio")
+#define USAR_LUZ false  
 
 void inicializarLuz();
 float obtenerLuz();

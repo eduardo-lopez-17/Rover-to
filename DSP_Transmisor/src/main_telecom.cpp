@@ -11,6 +11,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
+#include "vision_sd_module.h"
 
 // --- OLED DISPLAY CONFIGURATION ---
 #define SCREEN_WIDTH 128
@@ -18,12 +19,37 @@
 #define OLED_RESET -1 
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// --- PRESENCE DETECTION LOGIC ---
-const float PRESENCE_THRESHOLD_CM = 60.0; // Distancia para despertar la pantalla
-const uint32_t DISPLAY_TIMEOUT_MS = 5000; // Tiempo que la pantalla se queda encendida (5 seg)
+// --- PRESENCE & VISION LOGIC ---
+const float PRESENCE_THRESHOLD_CM = 60.0; 
+const uint32_t DISPLAY_TIMEOUT_MS = 5000; 
 uint32_t lastPresenceTime = 0;
 
-// --- FUNCIÓN PARA ACTUALIZAR LA PANTALLA LOCALMENTE ---
+uint32_t lastPhotoTime = 0;                 
+const uint32_t PHOTO_COOLDOWN_MS = 15000;  
+
+
+typedef struct __attribute__((packed)) {
+  uint32_t timestamp;
+  float pos_x;       
+  float pos_y;       
+  float yaw_angle;   
+  float distance;   
+  float gps_lat;     
+  float gps_lng;     
+  float env_temp;    
+  float env_hum;     
+  float env_pres;    
+  float env_soil_moist; 
+  float pwr_voltage;        
+  float pwr_current;          
+  uint8_t anomaly;   
+  uint8_t vision_obj_id;      
+  uint8_t vision_confidence;  
+} SensorPayload;
+
+SensorPayload txData;
+
+// 4. Y AHORA SÍ, LA FUNCIÓN DE LA PANTALLA
 void updateLocalDisplay() {
   display.clearDisplay();
   display.setTextSize(1);
@@ -44,34 +70,12 @@ void updateLocalDisplay() {
   display.display(); 
 }
 
-// --- UNIFIED DATA PAYLOAD (Matches the Receiver exactly) ---
-typedef struct __attribute__((packed)) {
-  uint32_t timestamp;
-  float pos_x;       
-  float pos_y;       
-  float yaw_angle;   
-  float distance;   
-  float gps_lat;     
-  float gps_lng;     
-  float env_temp;    
-  float env_hum;     
-  float env_pres;    
-  float env_soil_moist; 
-  float pwr_voltage;        
-  float pwr_current;          
-  uint8_t anomaly;   
-  uint8_t vision_obj_id;      // <-- Added for XIAO AI integration
-  uint8_t vision_confidence;  // <-- Added for XIAO AI integration
-} SensorPayload;
-
-SensorPayload txData;
-
 // Receiver MAC Address
 uint8_t receiverMac[] = {0x78, 0x1C, 0x3C, 0xDA, 0x3D, 0xB8}; 
 esp_now_peer_info_t peerInfo;
 
 // Timers
-uint32_t lastCellularSendTime = 0; 
+uint32_t lastCellularSendTime = 0;  
 
 // --- ESP-NOW CALLBACK ---
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
@@ -106,6 +110,7 @@ void setup() {
   inicializarCelular(); 
   initRFM69();
   initINA219();
+  initVisionAndSD();
 
   // Network configuration
   WiFi.mode(WIFI_STA);
@@ -148,24 +153,30 @@ void loop() {
   txData.pwr_current = infoPower.current_mA;
 
 
-  // --- LÓGICA DE AHORRO DE ENERGÍA (WAKE-ON-APPROACH) ---
+// --- LÓGICA DE AHORRO DE ENERGÍA Y FOTOGRAFÍA (WAKE-ON-APPROACH) ---
   
-  // 1. Verificar si hay alguien cerca (ignorando lecturas de 0 que a veces dan error)
   if (txData.distance > 0.1 && txData.distance < PRESENCE_THRESHOLD_CM) {
-      lastPresenceTime = millis(); // Reiniciamos el cronómetro
+      lastPresenceTime = millis(); // Reiniciamos el cronómetro de la pantalla OLED
+      
+      // ¿Han pasado 15 segundos desde la última foto? (o es la primera vez)
+      if (millis() - lastPhotoTime > PHOTO_COOLDOWN_MS || lastPhotoTime == 0) {
+          Serial.println("[ALERTA] Movimiento detectado. Tomando foto de prueba...");
+          
+          if(takeAndSavePhoto()) {
+              txData.vision_obj_id = 1; // Encendemos la alarma
+              lastPhotoTime = millis(); // Reiniciamos el reloj de 15 segundos
+          }
+      }
   }
 
-  // 2. Decidir si la pantalla debe estar encendida o apagada
+  // Decidir si la pantalla OLED debe estar encendida o apagada
   if (millis() - lastPresenceTime < DISPLAY_TIMEOUT_MS) {
-      // Alguien está cerca o se acaba de ir (aún no se acaba el tiempo)
       updateLocalDisplay();
   } else {
-      // Nadie cerca, apagar la pantalla para ahorrar batería
       display.clearDisplay();
       display.display();
   }
 
-  // ... (Sigue tu código de transmisión por ESP-NOW y Ubidots) ...
 
   // 3. Fast Local Transmission (ESP-NOW to OLED)
   esp_now_send(receiverMac, (uint8_t *) &txData, sizeof(txData));
@@ -184,6 +195,7 @@ void loop() {
       payload += "\"distance\":" + String(txData.distance) + ",";
       payload += "\"battery_v\":" + String(txData.pwr_voltage) + ",";
       payload += "\"current_ma\":" + String(txData.pwr_current) + ",";
+      payload += "\"vision_alert\":" + String(txData.vision_obj_id) + ",";
       
       // Ubidots Map formatting context:
       payload += "\"gps\":{\"value\":1, \"context\":{\"lat\":" + String(txData.gps_lat, 6) + ", \"lng\":" + String(txData.gps_lng, 6) + "}}";
@@ -191,6 +203,7 @@ void loop() {
       
       enviarDatosNube(payload);
       lastCellularSendTime = millis();
+      txData.vision_obj_id = 0;
   }
   
   delay(500); // Base loop delay

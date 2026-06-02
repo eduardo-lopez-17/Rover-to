@@ -3,13 +3,17 @@
 
 #include <Arduino.h>
 
-// Detectar automáticamente si estás compilando en el S3 o en el clásico
+// --- INTERRUPTOR DNP (Ponlo en false para aislar el sensor) ---
+#define USE_ULTRASONIC false 
+
+// Detectar automáticamente si estás compilando en el XIAO S3 o en el clásico
 #ifdef ARDUINO_USB_MODE
-    // Pines para el ESP32-S3 de Ángel
-    #define TRIG_PIN 13  
-    #define ECHO_PIN 14
+    // --- MODO I2C (Para el XIAO S3) ---
+    #define ULTRASONIC_USE_I2C true
+    #define ULTRASONIC_I2C_ADDR 0x57 // Dirección I2C del chip RCWL-9200
 #else
-    // Pines para tu ESP32 clásico de Steren
+    // --- MODO CLÁSICO TRIG/ECHO (Para tu ESP32 Steren) ---
+    #define ULTRASONIC_USE_I2C false
     #define TRIG_PIN 12  
     #define ECHO_PIN 13
 #endif
