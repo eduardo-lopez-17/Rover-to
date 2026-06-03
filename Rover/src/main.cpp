@@ -5,11 +5,11 @@
 
 void setup()
 {
-        serial_init();
-        task_init();
+	serial_init();
+	task_init();
 }
 
 void loop()
 {
-        // put your main code here, to run repeatedly:
+	// put your main code here, to run repeatedly:
 }
