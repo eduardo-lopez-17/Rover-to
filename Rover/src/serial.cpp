@@ -1,4 +1,4 @@
-#include "Arduino.h"
+#include "serial.h"
 #include "config.h"
 
 #ifndef SERIAL_BAUDRATE

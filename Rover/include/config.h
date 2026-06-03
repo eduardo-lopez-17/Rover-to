@@ -26,8 +26,28 @@
 // IMU CONFIGURATION
 // =====================================================
 
+#define ENABLE_IMU
 // Do you want to block the program if the IMU is not found? If not defined, it
 // will print a warning and continue.
 #define IMU_NON_BLOCKING
+
+/// =====================================================
+/// CAMERA CONFIGURATION
+/// =====================================================
+
+#define ENABLE_CAMERA
+#define CAMERA_FRAME_WIDTH 160
+#define CAMERA_FRAME_HEIGHT 120
+#define CAMERA_FRAME_SIZE FRAMESIZE_QQVGA
+
+/// =====================================================
+/// FLOW CONFIGURATION
+/// =====================================================
+
+#define FLOW_SCALE 0.0018f
+
+#define FLOW_THRESHOLD 15
+
+#define FLOW_MIN_FEATURES 20
 
 #endif // CONFIG_H

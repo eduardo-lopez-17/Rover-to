@@ -11,5 +11,5 @@ void setup()
 
 void loop()
 {
-	// put your main code here, to run repeatedly:
+	// Nothing to do here, all tasks are handled by FreeRTOS
 }
