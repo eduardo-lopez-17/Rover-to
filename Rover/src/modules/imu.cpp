@@ -1,6 +1,17 @@
 #include <Adafruit_BNO08x.h>
 #include <Wire.h>
 
+/// =====================================================
+/// Function prototypes
+/// =====================================================
+
+static void imu_set_reports();
+static void imu_get_rotation_vector();
+
+/// =====================================================
+/// Variables
+/// =====================================================
+
 Adafruit_BNO08x bno08x(-1);
 sh2_SensorValue_t sensorValue;
 
@@ -48,7 +59,7 @@ void imu_update()
 		switch (sensorValue.sensorId) {
 		case SH2_ROTATION_VECTOR:
 
-			get_rotation_vector();
+			imu_get_rotation_vector();
 			break;
 
 		case SH2_GYROSCOPE_CALIBRATED:
@@ -59,7 +70,7 @@ void imu_update()
 	}
 }
 
-static void get_rotation_vector()
+static void imu_get_rotation_vector()
 {
 	qR = sensorValue.un.rotationVector.real;
 	qI = sensorValue.un.rotationVector.i;

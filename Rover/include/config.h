@@ -16,6 +16,18 @@
 // #define ESP32_S3
 // #define ESP32_DOIT
 
+/// =====================================================
+/// TASKS CONFIGURATION
+/// =====================================================
+
+#define IMU_TASK_PRIORITY 4
+#define CAMERA_TASK_PRIORITY 2
+#define TELEMETRY_TASK_PRIORITY 1
+
+#define IMU_PERIOD_MS 2
+#define CAMERA_PERIOD_MS 33
+#define TELEMETRY_PERIOD_MS 100
+
 // =====================================================
 // SERIAL CONFIGURATION
 // =====================================================
