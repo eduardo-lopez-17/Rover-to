@@ -9,7 +9,7 @@
 // =========================================================================
 // INTERRUPTOR DE ACTIVACIÓN (Ponlo en true cuando conectes el sensor)
 // =========================================================================
-#define USAR_BME false 
+#define USAR_BME true 
 
 // Estructura para empaquetar los tres datos ambientales
 struct BMEData {

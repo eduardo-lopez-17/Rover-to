@@ -3,7 +3,7 @@
 #include <WiFi.h>
 #include <Wire.h>
 #include <Adafruit_BNO08x.h>
-#include "moist.h"  
+#include "soil_moisture_module.h"  
 
 // --- DEFINICIÓN EXPLÍCITA DE PINES I2C (Lolin S3) ---
 #define PIN_SDA 8

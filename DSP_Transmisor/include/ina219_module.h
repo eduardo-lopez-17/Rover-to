@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 // --- ACTIVATION SWITCH ---
-#define USE_INA219 false
+#define USE_INA219 true
 
 #define I2C_SDA D4
 #define I2C_SCL D5

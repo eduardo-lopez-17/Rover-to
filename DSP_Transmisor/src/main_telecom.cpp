@@ -84,8 +84,15 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 }
 
 void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("=== TELECOM TRANSMITTER INITIALIZED ===");
 
-  // Inicialización de OLED en el setup()
+  // 1. PRIMERO FIJAMOS LOS PINES DEL BUS I2C
+  Wire.begin(D4, D5);
+  delay(100); 
+
+  // 2. AHORA SÍ INICIALIZAMOS LA PANTALLA Y LOS SENSORES
   if(!display.begin(0x3C, true)) {
     Serial.println("Error: OLED not found");
   } else {
@@ -93,24 +100,20 @@ void setup() {
     display.setCursor(0,20);
     display.println("Transmitter Ready");
     display.display();
-    delay(3000); // Mostrar mensaje inicial por 3 segundos
+    delay(3000); 
   }
 
-
-  Serial.begin(115200);
-  delay(1000);
-  Serial.println("=== TELECOM TRANSMITTER INITIALIZED ===");
-
-  Wire.begin(); // SDA=21, SCL=22
-
-  // Initialize modular peripherals
   inicializarUltrasonico();
   inicializarGPS(); 
   inicializarBME(); 
   inicializarCelular(); 
   initRFM69();
   initINA219();
-  initVisionAndSD();
+  
+  // 3. LA CÁMARA HASTA EL FINAL (Usando el interruptor DNP)
+  #if USE_VISION_SD
+      initVisionAndSD(); 
+  #endif
 
   // Network configuration
   WiFi.mode(WIFI_STA);
@@ -154,17 +157,20 @@ void loop() {
 
 
 // --- LÓGICA DE AHORRO DE ENERGÍA Y FOTOGRAFÍA (WAKE-ON-APPROACH) ---
-  
   if (txData.distance > 0.1 && txData.distance < PRESENCE_THRESHOLD_CM) {
-      lastPresenceTime = millis(); // Reiniciamos el cronómetro de la pantalla OLED
+      lastPresenceTime = millis(); 
       
-      // ¿Han pasado 15 segundos desde la última foto? (o es la primera vez)
+      // ¿Han pasado 15 segundos desde la última foto?
       if (millis() - lastPhotoTime > PHOTO_COOLDOWN_MS || lastPhotoTime == 0) {
           Serial.println("[ALERTA] Movimiento detectado. Tomando foto de prueba...");
           
+          // ---> ¡AQUÍ DEBE ESTAR LA LÍNEA! <---
+          // Actualizamos el reloj de inmediato para evitar el spam, aunque la cámara falle.
+          lastPhotoTime = millis(); 
+          
+          // Intentamos tomar la foto
           if(takeAndSavePhoto()) {
               txData.vision_obj_id = 1; // Encendemos la alarma
-              lastPhotoTime = millis(); // Reiniciamos el reloj de 15 segundos
           }
       }
   }

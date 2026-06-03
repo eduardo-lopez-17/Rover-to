@@ -15,7 +15,7 @@
 #endif
 
 // Interruptor DNP (Ponlo en false para la prueba de "Cerebro Limpio")
-#define USAR_LUZ false  
+#define USAR_LUZ true
 
 void inicializarLuz();
 float obtenerLuz();

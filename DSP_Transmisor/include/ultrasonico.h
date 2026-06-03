@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 // --- INTERRUPTOR DNP (Ponlo en false para aislar el sensor) ---
-#define USE_ULTRASONIC false 
+#define USE_ULTRASONIC true
 
 // Detectar automáticamente si estás compilando en el XIAO S3 o en el clásico
 #ifdef ARDUINO_USB_MODE
