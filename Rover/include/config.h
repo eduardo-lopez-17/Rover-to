@@ -21,11 +21,13 @@
 /// =====================================================
 
 #define IMU_TASK_PRIORITY 4
-#define CAMERA_TASK_PRIORITY 2
+#define CAMERA_TASK_PRIORITY 3
+#define NAVIGATION_TASK_PRIORITY 2
 #define TELEMETRY_TASK_PRIORITY 1
 
 #define IMU_PERIOD_MS 2
 #define CAMERA_PERIOD_MS 33
+#define NAVIGATION_PERIOD_MS 20
 #define TELEMETRY_PERIOD_MS 100
 
 // =====================================================
@@ -57,9 +59,19 @@
 /// =====================================================
 
 #define FLOW_SCALE 0.0018f
-
 #define FLOW_THRESHOLD 15
-
 #define FLOW_MIN_FEATURES 20
+
+/// =====================================================
+/// NAVIGATION CONFIGURATION
+/// =====================================================
+
+#define ENABLE_NAVIGATION
+
+/// =====================================================
+/// TELEMETRY CONFIGURATION
+/// =====================================================
+
+#define ENABLE_TELEMETRY
 
 #endif // CONFIG_H
