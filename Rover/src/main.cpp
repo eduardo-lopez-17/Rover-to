@@ -1,12 +1,15 @@
 #include <Arduino.h>
 
+#include "serial.h"
 #include "task.h"
 
-void setup() {
-  // put your setup code here, to run once:
-  
+void setup()
+{
+        serial_init();
+        task_init();
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
+void loop()
+{
+        // put your main code here, to run repeatedly:
 }
