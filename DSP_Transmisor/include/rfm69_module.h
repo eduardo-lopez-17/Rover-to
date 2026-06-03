@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 // --- ACTIVATION SWITCH ---
-#define USE_RFM69 false
+#define USE_RFM69 true
 
 // Pines SPI y control para el XIAO ESP32-S3
 #define RFM69_CS    D1  // Según tu esquemático (J1 Pin 2)
