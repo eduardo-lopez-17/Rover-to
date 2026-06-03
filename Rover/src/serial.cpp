@@ -6,7 +6,8 @@
 #define SERIAL_BAUDRATE 115200
 #endif
 
-void serial_init() {
-        Serial.begin(SERIAL_BAUDRATE);
-        Serial.println("Serial communication initialized.");
+void serial_init()
+{
+	Serial.begin(SERIAL_BAUDRATE);
+	Serial.println("Serial communication initialized.");
 }
