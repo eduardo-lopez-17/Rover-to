@@ -3,19 +3,18 @@
 
 #include <Arduino.h>
 
-// --- ACTIVATION SWITCH ---
-#define USE_RFM69 true
+/* Initialize the RFM69W radio over SPI. */
+void rfm69_init(void);
 
-// Pines SPI y control para el XIAO ESP32-S3
-#define RFM69_CS    D1  // Según tu esquemático (J1 Pin 2)
-#define RFM69_INT   D7  // El pin que le robaste al TX del GPS (J2 Pin 7)
-#define RFM69_RST   -1  // En tu esquemático no veo cable de RESET, así que lo ignoramos
+/* Sample ambient RSSI to confirm the radio is alive.
+ * Prints result to Serial. Call once after rfm69_init(). */
+bool rfm69_self_test(void);
 
+/* Send a raw byte buffer. Returns false if radio not initialized. */
+bool rfm69_send(const uint8_t *payload, uint8_t len);
 
-// Set your bought frequency
-#define RF69_FREQ   915.0
+/* Non-blocking receive. Returns true and fills buf/len if a packet arrived.
+ * len must be initialized to the buffer size before calling. */
+bool rfm69_recv(uint8_t *buf, uint8_t *len);
 
-void initRFM69();
-bool sendRFData(uint8_t* payload, uint8_t size);
-
-#endif
+#endif /* RFM69_MODULE_H */

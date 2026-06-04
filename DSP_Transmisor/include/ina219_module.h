@@ -3,19 +3,13 @@
 
 #include <Arduino.h>
 
-// --- ACTIVATION SWITCH ---
-#define USE_INA219 true
-
-#define I2C_SDA D4
-#define I2C_SCL D5
-
 typedef struct {
-    float bus_voltage;
-    float current_mA;
-    float power_mW;
+    float bus_voltage_v;
+    float current_ma;
+    float power_mw;
 } PowerData;
 
-void initINA219();
-PowerData getPowerData();
+void      ina219_init(void);
+PowerData ina219_read(void);
 
-#endif
+#endif /* INA219_MODULE_H */

@@ -1,53 +1,103 @@
 #include "rfm69_module.h"
+#include "board_config.h"
+#include "pin_map.h"
 
 #if USE_RFM69
-    #include <SPI.h>
-    #include <RH_RF69.h>
-
-    // Radio instance
-    RH_RF69 rf69(RFM69_CS, RFM69_INT);
+#include <RH_RF69.h>
+#include <SPI.h>
+static RH_RF69 s_radio(PIN_RFM69_CS, PIN_RFM69_INT);
+static bool    s_radio_ok;
 #endif
 
-void initRFM69() {
+static void hardware_reset(void)
+{
 #if USE_RFM69
-    Serial.println("[RFM69] Initializing radio at 915 MHz...");
-
-    // Hardware Reset (Highly recommended to avoid SPI lockups)
-    pinMode(RFM69_RST, OUTPUT);
-    digitalWrite(RFM69_RST, LOW);
-    delay(10);
-    digitalWrite(RFM69_RST, HIGH);
-    delay(10);
-    digitalWrite(RFM69_RST, LOW);
-    delay(10);
-
-    if (!rf69.init()) {
-        Serial.println("[RFM69] ERROR: Init failed. Check SPI wiring.");
+    if (PIN_RFM69_RST < 0)
         return;
-    }
-
-    if (!rf69.setFrequency(RF69_FREQ)) {
-        Serial.println("[RFM69] ERROR: setFrequency failed.");
-        return;
-    }
-
-    // Set transmit power to 13dBm as per your spec sheet
-    rf69.setTxPower(13, true); 
-    
-    Serial.println("[RFM69] Radio ready and configured.");
-#else
-    Serial.println("[RFM69] Module disabled by software (DNP).");
+    pinMode(PIN_RFM69_RST, OUTPUT);
+    digitalWrite(PIN_RFM69_RST, LOW);
+    delay(10);
+    digitalWrite(PIN_RFM69_RST, HIGH);
+    delay(10);
+    digitalWrite(PIN_RFM69_RST, LOW);
+    delay(10);
 #endif
 }
 
-bool sendRFData(uint8_t* payload, uint8_t size) {
+void rfm69_init(void)
+{
 #if USE_RFM69
-    // RadioHead requires waiting for the packet to be fully sent
-    rf69.send(payload, size);
-    rf69.waitPacketSent();
+    hardware_reset();
+
+    s_radio_ok = s_radio.init();
+    if (!s_radio_ok) {
+        Serial.println("[RFM69] ERROR: SPI init failed — check CS/INT wiring");
+        return;
+    }
+
+    if (!s_radio.setFrequency(RF69_FREQ_MHZ)) {
+        Serial.println("[RFM69] ERROR: setFrequency failed");
+        s_radio_ok = false;
+        return;
+    }
+
+    /* IMPORTANT: second argument MUST be false for RFM69W (non-HW variant).
+     * Passing true enables PA_BOOST, which is only valid on RFM69HW and will
+     * cause incorrect TX power — or hardware damage — on the W variant. */
+    s_radio.setTxPower(RF69_TX_POWER_DBM, false);
+
+    Serial.printf("[RFM69] OK — %.1f MHz, %d dBm (RFM69W mode)\n",
+                  RF69_FREQ_MHZ, RF69_TX_POWER_DBM);
+#else
+    Serial.println("[RFM69] disabled (DNP)");
+#endif
+}
+
+bool rfm69_self_test(void)
+{
+#if USE_RFM69
+    if (!s_radio_ok) {
+        Serial.println("[RFM69] SELF-TEST FAIL: radio not initialized");
+        return false;
+    }
+    /* Switch to RX briefly and read ambient RSSI.
+     * A valid reading (typically -100 to -40 dBm) confirms the RF chain
+     * and SPI communication are working. */
+    s_radio.setModeRx();
+    delay(20);
+    int8_t rssi = s_radio.lastRssi();
+    s_radio.setModeIdle();
+    Serial.printf("[RFM69] SELF-TEST OK — ambient RSSI: %d dBm\n", rssi);
     return true;
 #else
-    // If DNP is active, just pretend it sent successfully
-    return true; 
+    return true;
+#endif
+}
+
+bool rfm69_send(const uint8_t *payload, uint8_t len)
+{
+#if USE_RFM69
+    if (!s_radio_ok)
+        return false;
+    s_radio.send(payload, len);
+    s_radio.waitPacketSent();
+    return true;
+#else
+    return true;
+#endif
+}
+
+bool rfm69_recv(uint8_t *buf, uint8_t *len)
+{
+#if USE_RFM69
+    if (!s_radio_ok)
+        return false;
+    if (!s_radio.available())
+        return false;
+    return s_radio.recv(buf, len);
+#else
+    (void)buf;
+    (void)len;
+    return false;
 #endif
 }

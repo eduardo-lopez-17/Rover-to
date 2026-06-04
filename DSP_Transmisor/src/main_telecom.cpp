@@ -1,220 +1,260 @@
-  #include <Arduino.h>
-  #include <WiFi.h>
-  #include <esp_now.h>
-  #include "ultrasonico.h"  
-  #include "soil_moisture_module.h"
-  #include "gps_modulo.h" 
-  #include "bme280_modulo.h" 
-  #include "sim800_modulo.h" 
-  #include "rfm69_module.h" 
-  #include "ina219_module.h"
-  #include <Wire.h>
-  #include <Adafruit_GFX.h>
-  #include <Adafruit_SH110X.h>
-  #include "vision_sd_module.h"
+#include <Arduino.h>
+#include <WiFi.h>
+#include <Wire.h>
+#include <esp_now.h>
 
-  // --- OLED DISPLAY CONFIGURATION ---
-  #define SCREEN_WIDTH 128
-  #define SCREEN_HEIGHT 64
-  #define OLED_RESET -1 
-  Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#include <Adafruit_GFX.h>
+#include <Adafruit_SH110X.h>
 
-  // --- PRESENCE & VISION LOGIC ---
-  const float PRESENCE_THRESHOLD_CM = 60.0; 
-  const uint32_t DISPLAY_TIMEOUT_MS = 5000; 
-  uint32_t lastPresenceTime = 0;
+#include "board_config.h"
+#include "pin_map.h"
 
-  uint32_t lastPhotoTime = 0;                 
-  const uint32_t PHOTO_COOLDOWN_MS = 15000;  
+#include "bme280_module.h"
+#include "bh1750_module.h"
+#include "bno085_module.h"
+#include "gps_module.h"
+#include "ina219_module.h"
+#include "rfm69_module.h"
+#include "sim800_module.h"
+#include "soil_moisture_module.h"
+#include "ultrasonic_module.h"
+#include "vision_sd_module.h"
 
-
-  typedef struct __attribute__((packed)) {
+/* =========================================================================
+ * Payload — struct must be byte-identical on TX and RX sides.
+ * Any field addition or reorder requires updating both nodes.
+ * ========================================================================= */
+typedef struct __attribute__((packed)) {
     uint32_t timestamp;
-    float pos_x;       
-    float pos_y;       
-    float yaw_angle;   
-    float distance;   
-    float gps_lat;     
-    float gps_lng;     
-    float env_temp;    
-    float env_hum;     
-    float env_pres;    
-    float env_soil_moist; 
-    float pwr_voltage;        
-    float pwr_current;          
-    uint8_t anomaly;   
-    uint8_t vision_obj_id;      
-    uint8_t vision_confidence;  
-  } SensorPayload;
+    float    pos_x;
+    float    pos_y;
+    float    yaw_angle;
+    float    distance_cm;
+    float    gps_lat;
+    float    gps_lng;
+    float    env_temp_c;
+    float    env_humidity_pct;
+    float    env_pressure_hpa;
+    float    env_soil_moisture_pct;
+    float    pwr_voltage_v;
+    float    pwr_current_ma;
+    uint8_t  anomaly;
+    uint8_t  vision_obj_id;
+    uint8_t  vision_confidence;
+} SensorPayload;
 
-  SensorPayload txData;
+static SensorPayload tx_data;
 
-  // 4. pantalla
-  void updateLocalDisplay() {
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(SH110X_WHITE); 
-    
-    display.setCursor(0, 0);
-    display.print("--- NODE STATUS ---");
+/* =========================================================================
+ * OLED display
+ * ========================================================================= */
+static Adafruit_SH1106G s_display(128, 64, &Wire, -1);
+static bool             s_display_ok;
 
-    display.setCursor(0, 15);
-    display.printf("T:%.1fC H:%.0f%% P:%.0f", txData.env_temp, txData.env_hum, txData.env_pres);
-    
-    display.setCursor(0, 30);
-    display.printf("PWR: %.1fV %.0fmA", txData.pwr_voltage, txData.pwr_current);
-
-    // Acomodamos distancia y coordenadas en los últimos dos renglones
-    display.setCursor(0, 43);
-    display.printf("Dist: %.1f cm", txData.distance);
-    
-    display.setCursor(0, 54);
-    display.printf("GPS:%.4f,%.4f", txData.gps_lat, txData.gps_lng);
-    
-    display.display(); 
-  }
-
-  // Receiver MAC Address
-  uint8_t receiverMac[] = {0x90, 0x70, 0x69, 0x12, 0xBE, 0x48}; 
-  esp_now_peer_info_t peerInfo;
-
-  // Timers
-  uint32_t lastCellularSendTime = 0;  
-
-  // --- ESP-NOW CALLBACK ---
-  void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-    // Serial.print("\r[ESP-NOW] Send Status: ");
-    // Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
-  }
-
-  void setup() {
-    Serial.begin(115200);
-    delay(1000);
-    Serial.println("=== TELECOM TRANSMITTER INITIALIZED ===");
-
-    // 1. PRIMERO FIJAMOS LOS PINES DEL BUS I2C
-    Wire.begin(D4, D5);
-    delay(100); 
-
-    // 2. AHORA SÍ INICIALIZAMOS LA PANTALLA Y LOS SENSORES
-    if(!display.begin(0x3C, true)) {
-      Serial.println("Error: OLED not found");
-    } else {
-      display.clearDisplay();
-      display.setCursor(0,20);
-      display.println("Transmitter Ready");
-      display.display();
-      delay(3000); 
+static void oled_init(void)
+{
+    s_display_ok = s_display.begin(OLED_I2C_ADDR, true);
+    if (!s_display_ok) {
+        Serial.println("[OLED] ERROR: not found — display disabled, all else continues");
+        return;
     }
+    s_display.clearDisplay();
+    s_display.setTextSize(1);
+    s_display.setTextColor(SH110X_WHITE);
+    s_display.setCursor(0, 20);
+    s_display.println("  Transmitter Ready");
+    s_display.display();
+    delay(2000);
+    Serial.println("[OLED] OK");
+}
 
-    inicializarUltrasonico();
-    inicializarGPS(); 
-    inicializarBME(); 
-    inicializarCelular(); 
-    initRFM69();
-    initINA219();
-    
-    // 3. LA CÁMARA HASTA EL FINAL (Usando el interruptor DNP)
-    #if USE_VISION_SD
-        initVisionAndSD(); 
-    #endif
+static void oled_update(const SensorPayload *d)
+{
+    if (!s_display_ok)
+        return;
+    s_display.clearDisplay();
+    s_display.setTextSize(1);
+    s_display.setTextColor(SH110X_WHITE);
+    s_display.setCursor(0, 0);
+    s_display.print("--- NODE STATUS ---");
+    s_display.setCursor(0, 15);
+    s_display.printf("T:%.1fC H:%.0f%% P:%.0f",
+                     d->env_temp_c, d->env_humidity_pct, d->env_pressure_hpa);
+    s_display.setCursor(0, 30);
+    s_display.printf("PWR: %.1fV %.0fmA", d->pwr_voltage_v, d->pwr_current_ma);
+    s_display.setCursor(0, 43);
+    s_display.printf("Dist: %.1f cm", d->distance_cm);
+    s_display.setCursor(0, 54);
+    s_display.printf("GPS:%.4f,%.4f", d->gps_lat, d->gps_lng);
+    s_display.display();
+}
 
-    // Network configuration
+static void oled_blank(void)
+{
+    if (!s_display_ok)
+        return;
+    s_display.clearDisplay();
+    s_display.display();
+}
+
+/* =========================================================================
+ * ESP-NOW
+ * ========================================================================= */
+static const uint8_t  k_receiver_mac[] = {0x90, 0x70, 0x69, 0x12, 0xBE, 0x48};
+static esp_now_peer_info_t s_peer;
+
+static void on_data_sent(const uint8_t *mac_addr, esp_now_send_status_t status)
+{
+    (void)mac_addr;
+    (void)status;
+}
+
+static void espnow_init(void)
+{
     WiFi.mode(WIFI_STA);
     esp_now_init();
-    esp_now_register_send_cb(OnDataSent);
-    
-    memcpy(peerInfo.peer_addr, receiverMac, 6);
-    peerInfo.channel = 0;  
-    peerInfo.encrypt = false;
-    esp_now_add_peer(&peerInfo);
-  }
+    esp_now_register_send_cb(on_data_sent);
+    memcpy(s_peer.peer_addr, k_receiver_mac, 6);
+    s_peer.channel = 0;
+    s_peer.encrypt = false;
+    esp_now_add_peer(&s_peer);
+    Serial.println("[ESP-NOW] OK");
+}
 
-  void loop() {
-    txData.timestamp = millis();
-    
-    // 1. Data Collection
-    txData.distance = obtenerDistancia(); 
+/* =========================================================================
+ * Timers
+ * ========================================================================= */
+static uint32_t s_last_presence_ms;
+static uint32_t s_last_photo_ms;
+static uint32_t s_last_cellular_ms;
 
-    GPSData infoGPS = obtenerDatosGPS();
-    txData.gps_lat = infoGPS.latitud;
-    txData.gps_lng = infoGPS.longitud;
+/* =========================================================================
+ * setup
+ * ========================================================================= */
+void setup(void)
+{
+    Serial.begin(115200);
+#ifdef ARDUINO_USB_MODE
+    /* Native USB on XIAO S3 — wait for terminal to connect before logging */
+    while (!Serial)
+        delay(10);
+#endif
+    Serial.println("=== TELECOM TRANSMITTER v2 ===");
 
-    BMEData infoBME = obtenerDatosBME(); 
-    txData.env_temp = infoBME.temperatura;
-    txData.env_hum = infoBME.humedad;
-    txData.env_pres = infoBME.presion;
+    /* Start I2C bus with a per-transaction timeout.
+     * Without this, a missing sensor can hang Wire indefinitely. */
+    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+    Wire.setTimeOut(100);
 
-    // 2. Dummy data for DSP and Vision (Until sensors are connected)
-    txData.pos_x = 0.0; 
-    txData.pos_y = 0.0;
-    txData.yaw_angle = 0.0;
-    txData.vision_obj_id = 0; 
-    txData.vision_confidence = 0;
-    
-    // Collision/Anomaly logic
-    txData.anomaly = (txData.distance < 15.0 && txData.distance > 0) ? 1 : 0;
+    /* OLED goes first — it must boot even if every other I2C device is absent */
+    oled_init();
 
-    PowerData infoPower = getPowerData();
-    txData.pwr_voltage = infoPower.bus_voltage;
-    txData.pwr_current = infoPower.current_mA;
+    /* Sensors — each init is non-fatal; missing hardware just logs an error */
+    bme280_init();
+    ina219_init();
+    bno085_init();
+    ultrasonic_init();
+    gps_init();
+    bh1750_init();
+    soil_init();
 
+    /* Radio */
+    rfm69_init();
+    rfm69_self_test(); /* prints ambient RSSI to confirm RF chain is alive */
 
-  // --- LÓGICA DE AHORRO DE ENERGÍA Y FOTOGRAFÍA (WAKE-ON-APPROACH) ---
-    if (txData.distance > 0.1 && txData.distance < PRESENCE_THRESHOLD_CM) {
-        lastPresenceTime = millis(); 
-        
-        // ¿Han pasado 15 segundos desde la última foto?
-        if (millis() - lastPhotoTime > PHOTO_COOLDOWN_MS || lastPhotoTime == 0) {
-            Serial.println("[ALERTA] Movimiento detectado. Tomando foto de prueba...");
-            
-            // ---> ¡AQUÍ DEBE ESTAR LA LÍNEA! <---
-            // Actualizamos el reloj de inmediato para evitar el spam, aunque la cámara falle.
-            lastPhotoTime = millis(); 
-            
-            // Intentamos tomar la foto
-            if(takeAndSavePhoto()) {
-                txData.vision_obj_id = 1; // Encendemos la alarma
-            }
+    /* Cellular — disabled by default (USE_SIM800 = 0 in board_config.h) */
+    sim800_init();
+
+    /* Vision + SD — disabled by default (USE_VISION_SD = 0 in board_config.h) */
+#if USE_VISION_SD
+    vision_sd_init();
+#endif
+
+    espnow_init();
+    Serial.println("[SETUP] Complete.");
+}
+
+/* =========================================================================
+ * loop
+ * ========================================================================= */
+void loop(void)
+{
+    tx_data.timestamp = millis();
+
+    /* --- Sensor reads ---------------------------------------------------- */
+    tx_data.distance_cm = ultrasonic_read_cm();
+
+    GpsData gps                   = gps_read();
+    tx_data.gps_lat               = gps.lat;
+    tx_data.gps_lng               = gps.lng;
+
+    BmeData bme                   = bme280_read();
+    tx_data.env_temp_c            = bme.temp_c;
+    tx_data.env_humidity_pct      = bme.humidity_pct;
+    tx_data.env_pressure_hpa      = bme.pressure_hpa;
+
+    PowerData pwr                 = ina219_read();
+    tx_data.pwr_voltage_v         = pwr.bus_voltage_v;
+    tx_data.pwr_current_ma        = pwr.current_ma;
+
+    tx_data.env_soil_moisture_pct = soil_read_pct();
+
+    /* BNO085 — yaw fed into payload; pos_x/pos_y require odometry (encoders) */
+    ImuData imu               = bno085_read();
+    tx_data.yaw_angle         = imu.valid ? imu.yaw_deg : 0.0f;
+    tx_data.pos_x             = 0.0f; /* TODO: dead-reckoning with wheel encoders */
+    tx_data.pos_y             = 0.0f;
+    tx_data.vision_confidence = 0;
+
+    /* Collision flag */
+    tx_data.anomaly = (tx_data.distance_cm > 0.1f &&
+                       tx_data.distance_cm < 15.0f) ? 1 : 0;
+
+    /* --- Wake-on-approach + photo capture ------------------------------- */
+    if (tx_data.distance_cm > 0.1f &&
+        tx_data.distance_cm < PRESENCE_THRESHOLD_CM) {
+        s_last_presence_ms = millis();
+        if (millis() - s_last_photo_ms > PHOTO_COOLDOWN_MS ||
+            s_last_photo_ms == 0) {
+            s_last_photo_ms = millis(); /* stamp before capture to avoid spam */
+#if USE_VISION_SD
+            if (vision_capture_photo())
+                tx_data.vision_obj_id = 1;
+#endif
         }
     }
 
-    // Decidir si la pantalla OLED debe estar encendida o apagada
-    if (millis() - lastPresenceTime < DISPLAY_TIMEOUT_MS) {
-        updateLocalDisplay();
-    } else {
-        display.clearDisplay();
-        display.display();
+    /* --- Display --------------------------------------------------------- */
+    if (millis() - s_last_presence_ms < DISPLAY_TIMEOUT_MS)
+        oled_update(&tx_data);
+    else
+        oled_blank();
+
+    /* --- Transmit: ESP-NOW (short range) -------------------------------- */
+    esp_now_send(k_receiver_mac, (const uint8_t *)&tx_data, sizeof(tx_data));
+
+    /* --- Transmit: LoRa (medium range) ---------------------------------- */
+    rfm69_send((const uint8_t *)&tx_data, sizeof(tx_data));
+
+    /* --- Transmit: Cloud via cellular (rate-limited) -------------------- */
+    if (millis() - s_last_cellular_ms > CELLULAR_INTERVAL_MS) {
+        String json;
+        json  = "{";
+        json += "\"temperature\":"  + String(tx_data.env_temp_c)            + ",";
+        json += "\"humidity\":"     + String(tx_data.env_humidity_pct)      + ",";
+        json += "\"pressure\":"     + String(tx_data.env_pressure_hpa)      + ",";
+        json += "\"distance\":"     + String(tx_data.distance_cm)           + ",";
+        json += "\"battery_v\":"    + String(tx_data.pwr_voltage_v)         + ",";
+        json += "\"current_ma\":"   + String(tx_data.pwr_current_ma)        + ",";
+        json += "\"vision_alert\":" + String(tx_data.vision_obj_id)         + ",";
+        json += "\"gps\":{\"value\":1,\"context\":{\"lat\":";
+        json += String(tx_data.gps_lat, 6) + ",\"lng\":";
+        json += String(tx_data.gps_lng, 6) + "}}";
+        json += "}";
+        sim800_send_cloud(json);
+        s_last_cellular_ms    = millis();
+        tx_data.vision_obj_id = 0;
     }
 
-
-    // 3. Fast Local Transmission (ESP-NOW to OLED)
-    esp_now_send(receiverMac, (uint8_t *) &txData, sizeof(txData));
-    
-    // 4. Medium Range Transmission (RFM69 up to 800 meters)
-    sendRFData((uint8_t *) &txData, sizeof(txData));
-
-    // 5. Slow Cloud Transmission (Every 10 seconds via Cellular)
-    if (millis() - lastCellularSendTime > 10000) {
-        
-        // Build JSON Payload for Ubidots (Using English keys)
-        String payload = "{";
-        payload += "\"temperature\":" + String(txData.env_temp) + ",";
-        payload += "\"humidity\":" + String(txData.env_hum) + ",";
-        payload += "\"pressure\":" + String(txData.env_pres) + ",";
-        payload += "\"distance\":" + String(txData.distance) + ",";
-        payload += "\"battery_v\":" + String(txData.pwr_voltage) + ",";
-        payload += "\"current_ma\":" + String(txData.pwr_current) + ",";
-        payload += "\"vision_alert\":" + String(txData.vision_obj_id) + ",";
-        
-        // Ubidots Map formatting context:
-        payload += "\"gps\":{\"value\":1, \"context\":{\"lat\":" + String(txData.gps_lat, 6) + ", \"lng\":" + String(txData.gps_lng, 6) + "}}";
-        payload += "}";
-        
-        enviarDatosNube(payload);
-        lastCellularSendTime = millis();
-        txData.vision_obj_id = 0;
-    }
-    
-    delay(500); // Base loop delay
-  }
+    delay(500);
+}

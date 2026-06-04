@@ -1,41 +1,42 @@
 #include "ina219_module.h"
+#include "board_config.h"
 
 #if USE_INA219
-    #include <Wire.h>
-    #include <Adafruit_INA219.h>
-
-    Adafruit_INA219 ina219;
+#include <Adafruit_INA219.h>
+#include <Wire.h>
+static Adafruit_INA219 s_ina(INA219_I2C_ADDR);
+static bool            s_ina_ok;
 #endif
 
-void initINA219() {
+void ina219_init(void)
+{
 #if USE_INA219
-    Serial.println("[INA219] Initializing power monitor...");
-    
-    // The INA219 uses the standard I2C bus initialized in setup()
-    if (!ina219.begin()) {
-        Serial.println("[INA219] ERROR: Failed to find INA219 chip");
+    s_ina_ok = s_ina.begin();
+    if (!s_ina_ok) {
+        Serial.println("[INA219] ERROR: chip not found on I2C");
         return;
     }
-    
-    // Default calibration for 32V and 2A limits
-    ina219.setCalibration_32V_2A();
-    Serial.println("[INA219] Ready.");
+    s_ina.setCalibration_32V_2A();
+    Serial.println("[INA219] OK");
 #else
-    Serial.println("[INA219] Module disabled by software (DNP).");
+    Serial.println("[INA219] disabled (DNP)");
 #endif
 }
 
-PowerData getPowerData() {
-    PowerData data = {0.0, 0.0, 0.0};
+PowerData ina219_read(void)
+{
+    PowerData d = {0.0f, 0.0f, 0.0f};
 #if USE_INA219
-    data.bus_voltage = ina219.getBusVoltage_V();
-    data.current_mA = ina219.getCurrent_mA();
-    data.power_mW = ina219.getPower_mW();
+    if (s_ina_ok) {
+        d.bus_voltage_v = s_ina.getBusVoltage_V();
+        d.current_ma    = s_ina.getCurrent_mA();
+        d.power_mw      = s_ina.getPower_mW();
+    }
 #else
-    // Simulated nominal data for testing the Digital Twin
-    data.bus_voltage = 12.0; 
-    data.current_mA = 250.5;
-    data.power_mW = 3006.0;
+    /* Simulated nominal values for digital twin testing */
+    d.bus_voltage_v = 12.0f;
+    d.current_ma    = 250.5f;
+    d.power_mw      = 3006.0f;
 #endif
-    return data;
+    return d;
 }

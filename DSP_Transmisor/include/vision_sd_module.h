@@ -3,10 +3,7 @@
 
 #include <Arduino.h>
 
-// --- ACTIVATION SWITCH ---
-#define USE_VISION_SD true
+void vision_sd_init(void);
+bool vision_capture_photo(void);
 
-void initVisionAndSD();
-bool takeAndSavePhoto();
-
-#endif
+#endif /* VISION_SD_MODULE_H */

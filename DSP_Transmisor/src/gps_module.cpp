@@ -1,44 +1,39 @@
-#include "gps_modulo.h"
+#include "gps_module.h"
+#include "board_config.h"
+#include "pin_map.h"
 
 #if USE_GPS
-    #include <TinyGPS++.h>
-    #include <HardwareSerial.h>
-
-    TinyGPSPlus gps;
-    // Usamos el UART 1 del ESP32 para no interferir con el USB (UART 0)
-    HardwareSerial gpsSerial(1); 
+#include <HardwareSerial.h>
+#include <TinyGPS++.h>
+static TinyGPSPlus    s_gps;
+static HardwareSerial s_gps_serial(1);
 #endif
 
-void inicializarGPS() {
+void gps_init(void)
+{
 #if USE_GPS
-    Serial.println("[GPS] Inicializando...");
-    
-    // Aquí inyectamos nuestros pines personalizados D6 y el -1
-    gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-    
-    Serial.println("[GPS] OK (Buscando satélites...)");
+    /* PIN_GPS_TX = -1 isolates that pin, freeing D7 for RFM69 INT */
+    s_gps_serial.begin(GPS_BAUD_RATE, SERIAL_8N1, PIN_GPS_RX, PIN_GPS_TX);
+    Serial.println("[GPS] OK — searching for satellites...");
 #else
-    Serial.println("[GPS] Módulo deshabilitado por software (DNP).");
+    Serial.println("[GPS] disabled (DNP)");
 #endif
 }
 
-GPSData obtenerDatosGPS() {
-    GPSData data = {0.0, 0.0};
-    
+GpsData gps_read(void)
+{
+    GpsData d = {0.0f, 0.0f};
 #if USE_GPS
-    while (gpsSerial.available() > 0) {
-        gps.encode(gpsSerial.read());
-    }
-    
-    if (gps.location.isUpdated()) {
-        data.latitud = gps.location.lat();
-        data.longitud = gps.location.lng();
+    while (s_gps_serial.available() > 0)
+        s_gps.encode(s_gps_serial.read());
+    if (s_gps.location.isUpdated()) {
+        d.lat = (float)s_gps.location.lat();
+        d.lng = (float)s_gps.location.lng();
     }
 #else
-    // Coordenadas simuladas (ITESM Campus Monterrey) para pruebas en interiores
-    data.latitud = 25.6514; 
-    data.longitud = -100.2895;
-#endif  
-
-    return data;
+    /* ITESM Campus Monterrey — simulated fix for indoor testing */
+    d.lat = 25.6514f;
+    d.lng = -100.2895f;
+#endif
+    return d;
 }
