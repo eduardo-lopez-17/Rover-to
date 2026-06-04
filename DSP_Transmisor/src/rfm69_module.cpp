@@ -41,12 +41,12 @@ void rfm69_init(void)
         return;
     }
 
-    /* IMPORTANT: second argument MUST be false for RFM69W (non-HW variant).
-     * Passing true enables PA_BOOST, which is only valid on RFM69HW and will
-     * cause incorrect TX power — or hardware damage — on the W variant. */
-    s_radio.setTxPower(RF69_TX_POWER_DBM, false);
+    /* RFM69HW: second argument true enables PA_BOOST (required for HW variant).
+     * Do NOT change to false — that disables PA_BOOST and caps power at +13 dBm
+     * (RFM69W behavior), which still works but wastes HW capability. */
+    s_radio.setTxPower(RF69_TX_POWER_DBM, true);
 
-    Serial.printf("[RFM69] OK — %.1f MHz, %d dBm (RFM69W mode)\n",
+    Serial.printf("[RFM69] OK — %.1f MHz, %d dBm (RFM69HW mode, PA_BOOST on)\n",
                   RF69_FREQ_MHZ, RF69_TX_POWER_DBM);
 #else
     Serial.println("[RFM69] disabled (DNP)");

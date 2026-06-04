@@ -52,18 +52,19 @@ static void print_payload(const SensorPayload *d, const char *channel)
 }
 
 /* =========================================================================
- * ESP-NOW
+ * ESP-NOW — callback runs in WiFi task; defer print to main loop to avoid
+ * concurrent Serial writes with RFM69 polling.
  * ========================================================================= */
+static volatile bool s_espnow_pending;
+static SensorPayload s_espnow_buf;
+
 static void on_data_recv(const uint8_t *mac, const uint8_t *data, int len)
 {
     if (len != sizeof(SensorPayload)) {
-        Serial.printf("[ESP-NOW] WARNING: unexpected packet size %d (expected %d)\n",
-                      len, (int)sizeof(SensorPayload));
-        return;
+        return; /* size mismatch — silently drop */
     }
-    SensorPayload d;
-    memcpy(&d, data, sizeof(d));
-    print_payload(&d, "ESP-NOW");
+    memcpy((void *)&s_espnow_buf, data, sizeof(s_espnow_buf));
+    s_espnow_pending = true;
 }
 
 static void espnow_init(void)
@@ -86,6 +87,7 @@ void setup(void)
 #ifdef ARDUINO_USB_MODE
     while (!Serial)
         delay(10);
+    delay(300);
 #endif
     Serial.println("=== TELECOM RECEIVER ===");
 
@@ -100,6 +102,14 @@ void setup(void)
 
 void loop(void)
 {
+    /* Drain ESP-NOW pending flag — safe to print here (single task) */
+    if (s_espnow_pending) {
+        s_espnow_pending = false;
+        SensorPayload d;
+        memcpy(&d, (const void *)&s_espnow_buf, sizeof(d));
+        print_payload(&d, "ESP-NOW");
+    }
+
     /* Poll RFM69 — non-blocking */
     uint8_t buf[sizeof(SensorPayload)];
     uint8_t len = sizeof(buf);

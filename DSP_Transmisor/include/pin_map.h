@@ -6,7 +6,7 @@
 /* =========================================================================
  * PIN MAP — Seeed Studio XIAO ESP32-S3  (primary target)
  * ========================================================================= */
-#if defined(ARDUINO_SEEED_XIAO_ESP32S3)
+#if defined(ARDUINO_XIAO_ESP32S3) || defined(ARDUINO_SEEED_XIAO_ESP32S3)
 
 /* I2C — shared by OLED, BME280, INA219, Ultrasonic, BH1750 */
 #define PIN_I2C_SDA D4

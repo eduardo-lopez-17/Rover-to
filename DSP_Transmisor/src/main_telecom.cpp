@@ -135,15 +135,18 @@ void setup(void)
 {
     Serial.begin(115200);
 #ifdef ARDUINO_USB_MODE
-    /* Native USB on XIAO S3 — wait for terminal to connect before logging */
+    /* Native USB on XIAO S3 — wait for CDC to connect, then give the host
+     * terminal app 300 ms to finish attaching before we start logging. */
     while (!Serial)
         delay(10);
+    delay(300);
 #endif
     Serial.println("=== TELECOM TRANSMITTER v2 ===");
+    Serial.flush();
 
     /* Start I2C bus with a per-transaction timeout.
      * Without this, a missing sensor can hang Wire indefinitely. */
-    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+    Wire.begin();
     Wire.setTimeOut(100);
 
     /* OLED goes first — it must boot even if every other I2C device is absent */
@@ -160,7 +163,7 @@ void setup(void)
 
     /* Radio */
     rfm69_init();
-    rfm69_self_test(); /* prints ambient RSSI to confirm RF chain is alive */
+    rfm69_self_test();
 
     /* Cellular — disabled by default (USE_SIM800 = 0 in board_config.h) */
     sim800_init();
