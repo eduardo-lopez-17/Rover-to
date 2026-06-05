@@ -50,9 +50,9 @@
 /// =====================================================
 
 #define ENABLE_CAMERA
-#define CAMERA_FRAME_WIDTH 160
-#define CAMERA_FRAME_HEIGHT 120
-#define CAMERA_FRAME_SIZE FRAMESIZE_QQVGA
+#define CAMERA_FRAME_WIDTH 96
+#define CAMERA_FRAME_HEIGHT 96
+#define CAMERA_FRAME_SIZE FRAMESIZE_96X96
 
 /// =====================================================
 /// FLOW CONFIGURATION
@@ -87,7 +87,7 @@
 // Optical flow scale (pixels to m/s conversion)
 #define VIO_FLOW_SCALE BASE_FLOW_SCALE * FACTOR_CORRECCION
 #define BASE_FLOW_SCALE 0.00024f
-#define FACTOR_CORRECCION 3.272f
+#define FACTOR_CORRECCION 3.0f
 
 /// =====================================================
 /// TELEMETRY CONFIGURATION
