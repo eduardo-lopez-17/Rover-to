@@ -5,16 +5,18 @@
  * FEATURE FLAGS — 1 = enabled, 0 = DNP (Do Not Populate)
  * Edit this file to match your physical build.
  * ========================================================================= */
-#define USE_RFM69       1
+#define USE_ESPNOW      1
+#define USE_AUDIO       1
+#define USE_RFM69       0
 #define USE_GPS         0
-#define USE_BME280      1
-#define USE_INA219      1
-#define USE_BNO085      1
-#define USE_ULTRASONIC  1
-#define USE_BH1750      1
-#define USE_SOIL        0
+#define USE_BME280      0
+#define USE_INA219      0
+#define USE_BNO085      0
+#define USE_ULTRASONIC  0
+#define USE_BH1750      0
+#define USE_SOIL        1
 #define USE_SIM800      0
-#define USE_VISION_SD   0
+#define USE_VISION_SD   1
 
 /* =========================================================================
  * CLOUD / CELLULAR CREDENTIALS (relevant only when USE_SIM800 = 1)
@@ -34,6 +36,30 @@
 #define BNO085_I2C_ADDR      0x4A  /* PS1=0, PS0=0   → 0x4A (default); PS0=1 → 0x4B */
 #define ULTRASONIC_I2C_ADDR  0x57  /* RCWL-9200 */
 #define BH1750_I2C_ADDR      0x23  /* ADDR low  → 0x23, ADDR high → 0x5C */
+
+/* =========================================================================
+ * SECURITY — AES-128 shared key (exactly 16 bytes, same on TX and RX)
+ * Used for RFM69 packet encryption and ESP-NOW link encryption.
+ * ========================================================================= */
+#define USE_ENCRYPTION     1
+#define AES_KEY_16         "PlantioSecKey123"  /* change before deployment */
+
+/* TX MAC for ESP-NOW encrypted reception on the RX node.
+ * Run `WiFi.macAddress()` on the TX and paste here.
+ * Format: {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}               */
+#define TX_MAC             {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}  /* TODO: fill in */
+
+/* =========================================================================
+ * LINK MONITOR
+ * ========================================================================= */
+#define LINK_TIMEOUT_MS    10000U  /* alert after 10 s without a packet */
+#define LINK_FAIL_COUNT    5       /* ESP-NOW consecutive TX failures before alert */
+
+/* =========================================================================
+ * BNO085 SHOCK / THEFT DETECTION
+ * ========================================================================= */
+#define SHOCK_THRESHOLD_G  2.5f   /* linear accel (g) above this = shock/theft */
+#define TILT_THRESHOLD_DEG 45.0f  /* roll or pitch change beyond this = knocked over */
 
 /* =========================================================================
  * RADIO SETTINGS

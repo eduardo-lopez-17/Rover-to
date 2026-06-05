@@ -46,8 +46,14 @@ void rfm69_init(void)
      * (RFM69W behavior), which still works but wastes HW capability. */
     s_radio.setTxPower(RF69_TX_POWER_DBM, true);
 
-    Serial.printf("[RFM69] OK — %.1f MHz, %d dBm (RFM69HW mode, PA_BOOST on)\n",
+#if USE_ENCRYPTION
+    s_radio.setEncryptionKey((const uint8_t *)AES_KEY_16);
+    Serial.printf("[RFM69] OK — %.1f MHz, %d dBm, AES-128 ON\n",
                   RF69_FREQ_MHZ, RF69_TX_POWER_DBM);
+#else
+    Serial.printf("[RFM69] OK — %.1f MHz, %d dBm (no encryption)\n",
+                  RF69_FREQ_MHZ, RF69_TX_POWER_DBM);
+#endif
 #else
     Serial.println("[RFM69] disabled (DNP)");
 #endif
