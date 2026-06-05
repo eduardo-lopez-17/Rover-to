@@ -14,7 +14,8 @@ struct FlowData {
 	float dx;
 	float dy;
 	uint32_t features;
-	bool valid;  // Validity flag for optical flow
+	bool valid;    // Validity flag for optical flow
+	float frameDt; // Time between frames in seconds
 };
 
 bool flow_init();

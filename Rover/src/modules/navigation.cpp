@@ -59,10 +59,7 @@ void navigation_start_calibration()
 	Serial.println("-> Mueve el móvil dibujando un '8' en el aire...");
 }
 
-bool navigation_is_calibrated()
-{
-	return isCalibrated;
-}
+bool navigation_is_calibrated() { return isCalibrated; }
 
 // =====================================================
 // EKF UPDATE WITH ZUPT
@@ -74,7 +71,7 @@ void navigation_update()
 	lastUpdateUs = now;
 
 	if (dt <= 0 || dt > 0.5f) {
-		return;  // Skip invalid dt
+		return; // Skip invalid dt
 	}
 
 	// Get sensor data
@@ -87,15 +84,18 @@ void navigation_update()
 	if (initialYaw < -999.0f) {
 		initialYaw = yaw;
 		isCalibrated = true;
-		Serial.println("-> Coloca el móvil FIRME en el punto de partida (0,0).");
+		Serial.println(
+		    "-> Coloca el móvil FIRME en el punto de partida (0,0).");
 		Serial.println("-> Iniciando tracking...");
 		return;
 	}
 
 	// Compute yaw relative to initial
 	float relativeYaw = yaw - initialYaw;
-	if (relativeYaw > PI) relativeYaw -= 2.0f * PI;
-	if (relativeYaw < -PI) relativeYaw += 2.0f * PI;
+	if (relativeYaw > PI)
+		relativeYaw -= 2.0f * PI;
+	if (relativeYaw < -PI)
+		relativeYaw += 2.0f * PI;
 
 	state.yawRad = relativeYaw;
 	state.yawDeg = relativeYaw * 180.0f / PI;
@@ -107,8 +107,10 @@ void navigation_update()
 	float accLocal_y = linAccelY;
 
 	// Apply deadband to accelerometer for stationary noise
-	if (fabs(accLocal_x) < VIO_IMU_DEADBAND) accLocal_x = 0.0f;
-	if (fabs(accLocal_y) < VIO_IMU_DEADBAND) accLocal_y = 0.0f;
+	if (fabs(accLocal_x) < VIO_IMU_DEADBAND)
+		accLocal_x = 0.0f;
+	if (fabs(accLocal_y) < VIO_IMU_DEADBAND)
+		accLocal_y = 0.0f;
 
 	// Transform to global frame using yaw (now stored as state.yawRad)
 	float cosYaw = cosf(state.yawRad);
@@ -132,8 +134,8 @@ void navigation_update()
 	float globalVX = 0.0f, globalVY = 0.0f;
 
 	if (flow.valid) {
-		camVX = -flow.dx * VIO_FLOW_SCALE / dt;
-		camVY = flow.dy * VIO_FLOW_SCALE / dt;
+		camVX = -flow.dx * FLOW_SCALE / flow.frameDt;
+		camVY = flow.dy * FLOW_SCALE / flow.frameDt;
 
 		globalVX = camVX * cosYaw - camVY * sinYaw;
 		globalVY = camVX * sinYaw + camVY * cosYaw;
@@ -144,9 +146,12 @@ void navigation_update()
 	// =====================================================
 	// 3. ZUPT LOGIC (Zero Velocity Update)
 	// =====================================================
-	bool isStationary = (accLocal_x == 0.0f && accLocal_y == 0.0f) &&
-			(flow.valid && fabs(camVX) < VIO_FLOW_DEADBAND &&
-			 fabs(camVY) < VIO_FLOW_DEADBAND);
+	bool imuStill = fabs(linAccelX) < 0.20f && fabs(linAccelY) < 0.20f;
+
+	bool flowStill = flow.valid && fabs(camVX) < VIO_FLOW_DEADBAND &&
+			 fabs(camVY) < VIO_FLOW_DEADBAND;
+
+	bool isStationary = imuStill && flowStill;
 
 	if (isStationary) {
 		// Force high gain update, collapse error covariance
@@ -178,14 +183,18 @@ void navigation_update()
 	}
 
 	// Clean up tiny noise
-	if (fabs(state.velX) < VIO_VEL_MIN_THRESHOLD) state.velX = 0.0f;
-	if (fabs(state.velY) < VIO_VEL_MIN_THRESHOLD) state.velY = 0.0f;
+	if (fabs(state.velX) < VIO_VEL_MIN_THRESHOLD)
+		state.velX = 0.0f;
+	if (fabs(state.velY) < VIO_VEL_MIN_THRESHOLD)
+		state.velY = 0.0f;
 
 	// =====================================================
 	// 5. POSITION INTEGRATION
 	// =====================================================
-	state.posX += state.velX * dt;
-	state.posY += state.velY * dt;
+	if (flow.valid) {
+		state.posX += state.velX * dt;
+		state.posY += state.velY * dt;
+	}
 }
 
 NavigationState navigation_get() { return state; }

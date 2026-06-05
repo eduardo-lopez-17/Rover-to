@@ -26,7 +26,7 @@
 #define TELEMETRY_TASK_PRIORITY 1
 
 #define IMU_PERIOD_MS 2
-#define CAMERA_PERIOD_MS 33
+#define CAMERA_PERIOD_MS 20
 #define NAVIGATION_PERIOD_MS 33
 #define TELEMETRY_PERIOD_MS 100
 
@@ -50,17 +50,15 @@
 /// =====================================================
 
 #define ENABLE_CAMERA
-#define CAMERA_FRAME_WIDTH 96
-#define CAMERA_FRAME_HEIGHT 96
-#define CAMERA_FRAME_SIZE FRAMESIZE_96X96
+#define CAMERA_FRAME_WIDTH 160
+#define CAMERA_FRAME_HEIGHT 120
+#define CAMERA_FRAME_SIZE FRAMESIZE_QQVGA
 
 /// =====================================================
 /// FLOW CONFIGURATION
 /// =====================================================
 
 #define FLOW_SCALE 0.0018f
-#define FLOW_THRESHOLD 15          // Intensity change threshold for feature detection
-#define FLOW_MIN_FEATURES 20       // Minimum features required for valid flow
 
 /// =====================================================
 /// VIO (VISUAL-INERTIAL ODOMETRY) CONFIGURATION
@@ -69,25 +67,25 @@
 #define ENABLE_NAVIGATION
 
 // EKF Parameters
-#define VIO_P_VEL_INIT 0.05f      // Initial velocity covariance
-#define VIO_P_ZUPT 0.001f         // Covariance when stationary (ZUPT)
-#define VIO_Q_ACCEL 0.04f         // Process noise (accelerometer)
+#define VIO_P_VEL_INIT 0.05f // Initial velocity covariance
+#define VIO_P_ZUPT 0.001f    // Covariance when stationary (ZUPT)
+#define VIO_Q_ACCEL 0.04f    // Process noise (accelerometer)
 
 // Measurement noise
-#define VIO_R_FLOW_OK 0.01f       // Low noise when camera has texture
-#define VIO_R_FLOW_ERR 1000.0f    // High noise when camera is blind
+#define VIO_R_FLOW_OK 0.01f    // Low noise when camera has texture
+#define VIO_R_FLOW_ERR 1000.0f // High noise when camera is blind
 
 // Deadbands for robust estimation
-#define VIO_IMU_DEADBAND 0.35f    // m/s^2 - Vibration filter
-#define VIO_FLOW_DEADBAND 0.015f  // m/s - Optical flow threshold
+#define VIO_IMU_DEADBAND 0.35f	 // m/s^2 - Vibration filter
+#define VIO_FLOW_DEADBAND 0.015f // m/s - Optical flow threshold
 
 // Velocity thresholding
 #define VIO_VEL_MIN_THRESHOLD 0.005f // Zero small velocities
 
 // Optical flow scale (pixels to m/s conversion)
-#define VIO_FLOW_SCALE BASE_FLOW_SCALE * FACTOR_CORRECCION
+#define VIO_FLOW_SCALE BASE_FLOW_SCALE *FACTOR_CORRECCION
 #define BASE_FLOW_SCALE 0.00024f
-#define FACTOR_CORRECCION 3.0f
+#define FACTOR_CORRECCION 1.0f
 
 /// =====================================================
 /// TELEMETRY CONFIGURATION
