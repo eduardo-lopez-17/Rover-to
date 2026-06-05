@@ -137,7 +137,7 @@ static void oled_update(const SensorPayload *d)
 static void oled_blank(void)
 {
     if (!s_display_ok)
-        return;
+        //return;
     s_display.clearDisplay();
     s_display.display();
 }

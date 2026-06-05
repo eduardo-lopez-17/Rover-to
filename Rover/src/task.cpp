@@ -32,7 +32,7 @@ void task_init()
 
 	// Create the IMU task pinned to core 1 with higher priority
 	xTaskCreatePinnedToCore(task_imu, "IMU", 4096, nullptr,
-				IMU_TASK_PRIORITY, &imuTaskHandle, 1);
+				IMU_TASK_PRIORITY, &imuTaskHandle, 0);
 #endif
 
 #ifdef ENABLE_CAMERA
@@ -46,7 +46,10 @@ void task_init()
 	Serial.println("Initializing Navigation...");
 	// Create the navigation task pinned to core 1 with medium priority
 	xTaskCreatePinnedToCore(task_navigation, "NAV", 4096, nullptr,
-				NAVIGATION_TASK_PRIORITY, nullptr, 1);
+				NAVIGATION_TASK_PRIORITY, nullptr, 0);
+
+	// Start VIO calibration routine
+	navigation_start_calibration();
 #endif
 
 #ifdef ENABLE_TELEMETRY
@@ -75,6 +78,14 @@ static void task_camera(void *arg)
 	for (;;) {
 		flow_update();
 
+		static uint32_t last = millis();
+
+		uint32_t now = millis();
+
+		Serial.printf("Frame dt=%lu ms\n", now - last);
+
+		last = now;
+
 		vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(CAMERA_PERIOD_MS));
 	}
 }
@@ -97,10 +108,18 @@ static void task_telemetry(void *pvParameters)
 
 	for (;;) {
 		NavigationState nav = navigation_get();
+
+		Serial.printf(
+		    "[%lu ms] POS_2D: X:%.1fcm Y:%.1fcm | VEL: VX:%.1fcm/s "
+		    "VY:%.1fcm/s | FLOW:%s | YAW:%.1f deg\n",
+		    millis(), nav.posX * 100.0f, nav.posY * 100.0f,
+		    nav.velX * 100.0f, nav.velY * 100.0f,
+		    nav.flowValid ? "OK " : "ERR", nav.yawDeg);
+
 		FlowData flow = flow_get();
 
-		Serial.printf("Yaw %.1f  Flow %.2f %.2f  Pos %.2f %.2f\n",
-			      nav.yawDeg, flow.dx, flow.dy, nav.posX, nav.posY);
+		Serial.printf("Flow %.1f %.1f Valid %d\n", flow.dx, flow.dy,
+			      flow.valid);
 
 		vTaskDelayUntil(&lastWakeTime,
 				pdMS_TO_TICKS(TELEMETRY_PERIOD_MS));

@@ -67,7 +67,7 @@
 #define RF69_FREQ_MHZ      915.0f
 /* RFM69HW variant — PA_BOOST enabled in rfm69_module.cpp (setTxPower second
  * arg = true). Max for HW is +20 dBm; 17 is a safe default indoors. */
-#define RF69_TX_POWER_DBM  17
+#define RF69_TX_POWER_DBM  20
 
 /* =========================================================================
  * PERIPHERAL BAUD RATES

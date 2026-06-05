@@ -1,6 +1,6 @@
 /**
  * @file flow.h
- * @brief Header file for camera vision flow control
+ * @brief Header file for camera vision flow control with VIO support
  */
 
 #ifndef FLOW_H
@@ -14,6 +14,8 @@ struct FlowData {
 	float dx;
 	float dy;
 	uint32_t features;
+	bool valid;    // Validity flag for optical flow
+	float frameDt; // Time between frames in seconds
 };
 
 bool flow_init();
