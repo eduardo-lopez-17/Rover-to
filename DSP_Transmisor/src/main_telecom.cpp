@@ -147,7 +147,6 @@ void setup(void)
     /* Start I2C bus with a per-transaction timeout.
      * Without this, a missing sensor can hang Wire indefinitely. */
     Wire.begin();
-    Wire.setTimeOut(100);
 
     /* OLED goes first — it must boot even if every other I2C device is absent */
     oled_init();
