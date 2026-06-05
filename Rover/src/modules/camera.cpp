@@ -42,7 +42,7 @@ bool camera_init()
 
 	config.jpeg_quality = 12;
 
-	config.fb_count = 1;
+	config.fb_count = 2;
 
 	return esp_camera_init(&config) == ESP_OK;
 }
