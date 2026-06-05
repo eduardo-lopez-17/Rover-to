@@ -47,6 +47,9 @@ void task_init()
 	// Create the navigation task pinned to core 1 with medium priority
 	xTaskCreatePinnedToCore(task_navigation, "NAV", 4096, nullptr,
 				NAVIGATION_TASK_PRIORITY, nullptr, 1);
+
+	// Start VIO calibration routine
+	navigation_start_calibration();
 #endif
 
 #ifdef ENABLE_TELEMETRY
@@ -97,10 +100,11 @@ static void task_telemetry(void *pvParameters)
 
 	for (;;) {
 		NavigationState nav = navigation_get();
-		FlowData flow = flow_get();
 
-		Serial.printf("Yaw %.1f  Flow %.2f %.2f  Pos %.2f %.2f\n",
-			      nav.yawDeg, flow.dx, flow.dy, nav.posX, nav.posY);
+		Serial.printf("[%lu ms] POS_2D: X:%.1fcm Y:%.1fcm | VEL: VX:%.1fcm/s VY:%.1fcm/s | FLOW:%s | YAW:%.1f deg\n",
+			      millis(), nav.posX * 100.0f, nav.posY * 100.0f,
+			      nav.velX * 100.0f, nav.velY * 100.0f,
+			      nav.flowValid ? "OK " : "ERR", nav.yawDeg);
 
 		vTaskDelayUntil(&lastWakeTime,
 				pdMS_TO_TICKS(TELEMETRY_PERIOD_MS));
