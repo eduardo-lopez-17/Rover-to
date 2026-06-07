@@ -55,12 +55,6 @@
 #define CAMERA_FRAME_SIZE FRAMESIZE_QQVGA
 
 /// =====================================================
-/// FLOW CONFIGURATION
-/// =====================================================
-
-#define FLOW_SCALE 0.0018f
-
-/// =====================================================
 /// VIO (VISUAL-INERTIAL ODOMETRY) CONFIGURATION
 /// =====================================================
 
@@ -84,8 +78,8 @@
 
 // Optical flow scale (pixels to m/s conversion)
 #define VIO_FLOW_SCALE BASE_FLOW_SCALE *FACTOR_CORRECCION
-#define BASE_FLOW_SCALE 0.00024f
-#define FACTOR_CORRECCION 1.0f
+#define BASE_FLOW_SCALE 0.0018f
+#define FACTOR_CORRECCION 0.608f
 
 /// =====================================================
 /// TELEMETRY CONFIGURATION

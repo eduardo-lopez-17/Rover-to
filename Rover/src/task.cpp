@@ -82,7 +82,7 @@ static void task_camera(void *arg)
 
 		uint32_t now = millis();
 
-		Serial.printf("Frame dt=%lu ms\n", now - last);
+		// Serial.printf("Frame dt=%lu ms\n", now - last);
 
 		last = now;
 
@@ -118,8 +118,8 @@ static void task_telemetry(void *pvParameters)
 
 		FlowData flow = flow_get();
 
-		Serial.printf("Flow %.1f %.1f Valid %d\n", flow.dx, flow.dy,
-			      flow.valid);
+		// Serial.printf("Flow %.1f %.1f Valid %d\n", flow.dx, flow.dy,
+		//   flow.valid);
 
 		vTaskDelayUntil(&lastWakeTime,
 				pdMS_TO_TICKS(TELEMETRY_PERIOD_MS));
