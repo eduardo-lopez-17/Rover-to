@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "camera.h"
+#include "esp_now.h"
 #include "flow.h"
 #include "imu.h"
 #include "navigation.h"
@@ -11,6 +12,7 @@
 void setup()
 {
 	serial_init();
+	esp_now_init();
 
 	imu_init();
 	camera_init();
