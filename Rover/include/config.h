@@ -24,11 +24,13 @@
 #define CAMERA_TASK_PRIORITY 3
 #define NAVIGATION_TASK_PRIORITY 2
 #define TELEMETRY_TASK_PRIORITY 1
+#define WIRELESS_COM_TASK_PRIORITY 1
 
 #define IMU_PERIOD_MS 2
 #define CAMERA_PERIOD_MS 20
 #define NAVIGATION_PERIOD_MS 33
 #define TELEMETRY_PERIOD_MS 100
+#define WIRELESS_COM_PERIOD_MS 100
 
 // =====================================================
 // SERIAL CONFIGURATION
@@ -55,12 +57,6 @@
 #define CAMERA_FRAME_SIZE FRAMESIZE_QQVGA
 
 /// =====================================================
-/// FLOW CONFIGURATION
-/// =====================================================
-
-#define FLOW_SCALE 0.0018f
-
-/// =====================================================
 /// VIO (VISUAL-INERTIAL ODOMETRY) CONFIGURATION
 /// =====================================================
 
@@ -84,13 +80,20 @@
 
 // Optical flow scale (pixels to m/s conversion)
 #define VIO_FLOW_SCALE BASE_FLOW_SCALE *FACTOR_CORRECCION
-#define BASE_FLOW_SCALE 0.00024f
-#define FACTOR_CORRECCION 1.0f
+#define BASE_FLOW_SCALE 0.0018f
+#define FACTOR_CORRECCION 0.608f
 
 /// =====================================================
 /// TELEMETRY CONFIGURATION
 /// =====================================================
 
 #define ENABLE_TELEMETRY
+
+/// =====================================================
+/// WIRELESS COMMUNICATION CONFIGURATION
+/// =====================================================
+
+#define ENABLE_WIRELESS_COM
+#define WIRELESS_COM_MAX_PAYLOAD 240
 
 #endif // CONFIG_H

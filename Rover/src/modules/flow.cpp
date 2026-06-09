@@ -57,7 +57,7 @@ static void computeOpticalFlow(uint8_t *current, uint8_t *previous, int width,
 		}
 	}
 
-	Serial.printf("Contrast=%d\n", maxPix - minPix);
+	// Serial.printf("Contrast=%d\n", maxPix - minPix);
 
 	// If texture is too flat (low contrast), flow is invalid
 	if ((maxPix - minPix) < 10) {
@@ -90,23 +90,23 @@ static void computeOpticalFlow(uint8_t *current, uint8_t *previous, int width,
 		}
 	}
 
-	if (abs(bestDx) <= 1)
-		bestDx = 0;
+	// if (abs(bestDx) <= 1)
+	// 	bestDx = 0;
 
-	if (abs(bestDy) <= 1)
-		bestDy = 0;
+	// if (abs(bestDy) <= 1)
+	// 	bestDy = 0;
 
 	dx = (float)bestDx;
 	dy = (float)bestDy;
 
-	Serial.printf("bestDx=%d bestDy=%d minSAD=%lu\n", bestDx, bestDy,
-		      minSAD);
+	// Serial.printf("bestDx=%d bestDy=%d minSAD=%lu\n", bestDx, bestDy,
+	//   minSAD);
 
 	bool edgeMatch =
 	    (abs(bestDx) >= searchRange) || (abs(bestDy) >= searchRange);
 
 	// Rechazar matches de mala calidad
-	flowData.valid = (minSAD <= 2500) && !edgeMatch;
+	flowData.valid = !edgeMatch;
 }
 
 bool flow_update()
@@ -127,8 +127,8 @@ bool flow_update()
 
 	uint8_t *frame = camera_get_frame();
 
-	Serial.printf("Pixels: %u %u %u %u\n", frame[0], frame[100],
-		      frame[1000], frame[2000]);
+	// Serial.printf("Pixels: %u %u %u %u\n", frame[0], frame[100],
+	//   frame[1000], frame[2000]);
 
 	const uint32_t size = camera_get_width() * camera_get_height();
 

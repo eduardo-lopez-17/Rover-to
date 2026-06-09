@@ -134,8 +134,8 @@ void navigation_update()
 	float globalVX = 0.0f, globalVY = 0.0f;
 
 	if (flow.valid) {
-		camVX = -flow.dx * FLOW_SCALE / flow.frameDt;
-		camVY = flow.dy * FLOW_SCALE / flow.frameDt;
+		camVX = -flow.dx * VIO_FLOW_SCALE / flow.frameDt;
+		camVY = flow.dy * VIO_FLOW_SCALE / flow.frameDt;
 
 		globalVX = camVX * cosYaw - camVY * sinYaw;
 		globalVY = camVX * sinYaw + camVY * cosYaw;

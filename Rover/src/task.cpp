@@ -5,6 +5,9 @@
 #include "imu.h"
 #include "navigation.h"
 #include "serial.h"
+#include "wireless_com.h"
+
+#include <esp_now.h>
 
 /// =====================================================
 /// Function prototypes
@@ -44,7 +47,7 @@ void task_init()
 
 #ifdef ENABLE_NAVIGATION
 	Serial.println("Initializing Navigation...");
-	// Create the navigation task pinned to core 1 with medium priority
+	// Create the navigation task pinned to core 0 with medium priority
 	xTaskCreatePinnedToCore(task_navigation, "NAV", 4096, nullptr,
 				NAVIGATION_TASK_PRIORITY, nullptr, 0);
 
@@ -57,6 +60,15 @@ void task_init()
 	// Create the telemetry task pinned to core 0 with lower priority
 	xTaskCreatePinnedToCore(task_telemetry, "TEL", 4096, nullptr,
 				TELEMETRY_TASK_PRIORITY, nullptr, 0);
+#endif
+
+#ifdef ENABLE_WIRELESS_COM
+	Serial.println("Initializing Wireless Communication...");
+	// Create the wireless communication task pinned to core 0 with lower
+	// priority
+	xTaskCreatePinnedToCore(task_wireless_com_tx, "WIRELESS_COM", 4096,
+				nullptr, WIRELESS_COM_TASK_PRIORITY, nullptr,
+				0);
 #endif
 }
 
@@ -82,7 +94,7 @@ static void task_camera(void *arg)
 
 		uint32_t now = millis();
 
-		Serial.printf("Frame dt=%lu ms\n", now - last);
+		// Serial.printf("Frame dt=%lu ms\n", now - last);
 
 		last = now;
 
@@ -118,10 +130,27 @@ static void task_telemetry(void *pvParameters)
 
 		FlowData flow = flow_get();
 
-		Serial.printf("Flow %.1f %.1f Valid %d\n", flow.dx, flow.dy,
-			      flow.valid);
+		// Serial.printf("Flow %.1f %.1f Valid %d\n", flow.dx, flow.dy,
+		//   flow.valid);
 
 		vTaskDelayUntil(&lastWakeTime,
 				pdMS_TO_TICKS(TELEMETRY_PERIOD_MS));
+	}
+}
+
+static void task_wireless_com_tx(void *arg)
+{
+	TickType_t lastWakeTime = xTaskGetTickCount();
+
+	EspNowMessage msg;
+
+	for (;;) {
+		if (xQueueReceive(espnowQueue, &msg, portMAX_DELAY)) {
+			esp_now_send(peerAddress, (uint8_t *)msg.text,
+				     strlen(msg.text) + 1);
+		}
+
+		vTaskDelayUntil(&lastWakeTime,
+				pdMS_TO_TICKS(WIRELESS_COM_PERIOD_MS));
 	}
 }

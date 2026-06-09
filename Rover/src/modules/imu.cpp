@@ -54,7 +54,7 @@ bool imu_init()
 
 static void imu_set_reports()
 {
-	bno08x.enableReport(SH2_ROTATION_VECTOR, 10000);
+	bno08x.enableReport(SH2_GAME_ROTATION_VECTOR, 10000);
 	bno08x.enableReport(SH2_LINEAR_ACCELERATION, 10000);
 }
 
@@ -62,14 +62,9 @@ void imu_update()
 {
 	while (bno08x.getSensorEvent(&sensorValue)) {
 		switch (sensorValue.sensorId) {
-		case SH2_ROTATION_VECTOR:
+		case SH2_GAME_ROTATION_VECTOR:
 
 			imu_get_rotation_vector();
-			break;
-
-		case SH2_GYROSCOPE_CALIBRATED:
-
-			gyroZ = sensorValue.un.gyroscope.z;
 			break;
 
 		case SH2_LINEAR_ACCELERATION:
