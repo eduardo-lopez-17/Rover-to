@@ -21,7 +21,7 @@
 #define PIN_GPS_RX D6
 #define PIN_GPS_TX -1
 
-/* SIM800 — UART1 (conflicts with GPS; only one active at a time) */
+/* SIM800 — UART2 (independent of GPS which uses UART1) */
 #define PIN_SIM800_RX D3
 #define PIN_SIM800_TX D2
 

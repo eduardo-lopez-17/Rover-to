@@ -6,17 +6,17 @@
  * Edit this file to match your physical build.
  * ========================================================================= */
 #define USE_ESPNOW      1
-#define USE_AUDIO       1
-#define USE_RFM69       0
-#define USE_GPS         0
-#define USE_BME280      0
-#define USE_INA219      0
-#define USE_BNO085      0
-#define USE_ULTRASONIC  0
-#define USE_BH1750      0
+#define USE_AUDIO       0
+#define USE_RFM69       1
+#define USE_GPS         1
+#define USE_BME280      1
+#define USE_INA219      1
+#define USE_BNO085      1
+#define USE_ULTRASONIC  1
+#define USE_BH1750      1
 #define USE_SOIL        1
-#define USE_SIM800      0
-#define USE_VISION_SD   1
+#define USE_SIM800      1
+#define USE_VISION_SD   0
 
 /* =========================================================================
  * CLOUD / CELLULAR CREDENTIALS (relevant only when USE_SIM800 = 1)
@@ -47,7 +47,7 @@
 /* TX MAC for ESP-NOW encrypted reception on the RX node.
  * Run `WiFi.macAddress()` on the TX and paste here.
  * Format: {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}               */
-#define TX_MAC             {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}  /* TODO: fill in */
+#define TX_MAC             {0x1C, 0xDB, 0xD4, 0x76, 0x9C, 0x9C}
 
 /* =========================================================================
  * LINK MONITOR

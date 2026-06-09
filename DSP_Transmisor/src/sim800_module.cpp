@@ -5,7 +5,7 @@
 #if USE_SIM800
 #define TINY_GSM_MODEM_SIM800
 #include <TinyGsmClient.h>
-static HardwareSerial s_serial_at(1);
+static HardwareSerial s_serial_at(2);
 static TinyGsm        s_modem(s_serial_at);
 static TinyGsmClient  s_client(s_modem);
 static const char     k_server[] = "industrial.api.ubidots.com";

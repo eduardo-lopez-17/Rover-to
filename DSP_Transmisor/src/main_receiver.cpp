@@ -174,4 +174,14 @@ void loop(void)
     }
 
     check_link();
+
+    /* Print "waiting" every 5 s so we know the receiver is alive */
+    static uint32_t s_last_alive_ms;
+    if (millis() - s_last_alive_ms >= 5000) {
+        s_last_alive_ms = millis();
+        Serial.printf("[RX] waiting... t=%lus  (ESP-NOW last: %lus ago, RFM69 last: %lus ago)\n",
+                      (unsigned long)(millis() / 1000),
+                      s_last_rx_espnow_ms ? (unsigned long)((millis() - s_last_rx_espnow_ms) / 1000) : 0UL,
+                      s_last_rx_rfm69_ms  ? (unsigned long)((millis() - s_last_rx_rfm69_ms)  / 1000) : 0UL);
+    }
 }
