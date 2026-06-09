@@ -16,11 +16,14 @@ static QueueHandle_t espnowQueue = nullptr;
 
 /* MAC del receptor */
 static uint8_t peerAddress[6] = WIRELESS_COM_BROADCAST_ADDRESS;
+static esp_now_peer_info_t peerInfo = {};
 
 void wireless_com_init()
 {
-	WiFi.mode(WIFI_STA);
-	WiFi.disconnect();
+	/*WiFi.mode(WIFI_STA);
+	esp_now_init();
+	WiFi.disconnect(true);
+	WiFi.setSleep(false);
 	esp_now_set_pmk((const uint8_t *)"PlantioSecKey123");
 
 	if (esp_now_init() != ESP_OK) {
@@ -35,7 +38,7 @@ void wireless_com_init()
 	memcpy(peerInfo.peer_addr, peerAddress, sizeof(peerAddress));
 
 	peerInfo.channel = 0;
-	peerInfo.encrypt = false;
+	peerInfo.encrypt = true;
 
 	if (esp_now_add_peer(&peerInfo) != ESP_OK) {
 		Serial.println("Failed to add peer");
@@ -47,6 +50,26 @@ void wireless_com_init()
 	if (!espnowQueue) {
 		Serial.println("Failed to create queue");
 	}
+		*/
+
+	WiFi.mode(WIFI_STA);
+	esp_now_init();
+	esp_now_set_pmk((const uint8_t *)"PlantioSecKey123");
+
+	// esp_now_register_send_cb(on_data_sent);
+
+	memcpy(peerInfo.peer_addr, peerAddress, sizeof(peerAddress));
+
+	peerInfo.channel = 0;
+	peerInfo.encrypt = true;
+
+	memcpy(peerInfo.lmk, "PlantioSecKey123", 16);
+	Serial.println("[ESP-NOW] OK — AES-128 enabled");
+
+	esp_now_add_peer(&peerInfo);
+
+	/* Print own MAC so it can be set as TX_MAC on the receiver */
+	Serial.printf("[ESP-NOW] TX MAC: %s\n", WiFi.macAddress().c_str());
 }
 
 bool wireless_com_send_text(const char *fmt, ...)
@@ -78,16 +101,16 @@ bool wireless_com_transmit_payload(const SensorPayload *payload)
 {
 	static const uint8_t peer_mac[] = WIRELESS_COM_BROADCAST_ADDRESS;
 
-	if (!esp_now_is_peer_exist(peer_mac)) {
+	if (!esp_now_is_peer_exist(peerAddress)) {
 		esp_now_peer_info_t peer = {};
-		memcpy(peer.peer_addr, peer_mac, 6);
+		memcpy(peer.peer_addr, peerAddress, 6);
 		peer.channel = 0;
 		peer.encrypt = true;
 		memcpy(peer.lmk, "PlantioSecKey123", 16);
 		esp_now_add_peer(&peer);
 	}
 
-	esp_err_t result = esp_now_send(peer_mac, (const uint8_t *)payload,
+	esp_err_t result = esp_now_send(peerAddress, (const uint8_t *)payload,
 					sizeof(SensorPayload));
 	return result == ESP_OK;
 }
