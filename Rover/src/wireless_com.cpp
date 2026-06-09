@@ -13,38 +13,45 @@
 
 static QueueHandle_t espnowQueue = nullptr;
 
+/* MAC del receptor */
+static uint8_t peerAddress[6] = WIRELESS_COM_BROADCAST_ADDRESS;
+
 void wireless_com_init()
 {
-	// Initialize WiFi in station mode
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect();
 
-	// Initialize ESP-NOW
 	if (esp_now_init() != ESP_OK) {
 		Serial.println("Error initializing ESP-NOW");
 		return;
 	}
 
-	// Create a queue for outgoing messages
+	// esp_now_register_send_cb(onDataSent);
+
+	esp_now_peer_info_t peerInfo = {};
+
+	memcpy(peerInfo.peer_addr, peerAddress, sizeof(peerAddress));
+
+	peerInfo.channel = 0;
+	peerInfo.encrypt = false;
+
+	if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+		Serial.println("Failed to add peer");
+		return;
+	}
+
 	espnowQueue = xQueueCreate(10, sizeof(EspNowMessage));
+
 	if (!espnowQueue) {
-		Serial.println("Failed to create ESP-NOW queue");
+		Serial.println("Failed to create queue");
 	}
 }
 
-bool espnow_send_text(const char *fmt, ...)
+bool wireless_com_transmit(const char *text)
 {
-	if (!espnowQueue)
+	if (!text)
 		return false;
 
-	EspNowMessage msg;
-
-	va_list args;
-	va_start(args, fmt);
-
-	vsnprintf(msg.text, sizeof(msg.text), fmt, args);
-
-	va_end(args);
-
-	return xQueueSend(espnowQueue, &msg, 0) == pdTRUE;
+	return esp_now_send(peerAddress, (const uint8_t *)text,
+			    strlen(text) + 1) == ESP_OK;
 }

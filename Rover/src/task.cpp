@@ -17,6 +17,7 @@ static void task_imu(void *pvParameters);
 static void task_camera(void *arg);
 static void task_navigation(void *arg);
 static void task_telemetry(void *pvParameters);
+static void task_wireless_com_tx(void *arg);
 
 /// =====================================================
 /// Variables
@@ -66,9 +67,8 @@ void task_init()
 	Serial.println("Initializing Wireless Communication...");
 	// Create the wireless communication task pinned to core 0 with lower
 	// priority
-	xTaskCreatePinnedToCore(task_wireless_com_tx, "WIRELESS_COM", 4096,
-				nullptr, WIRELESS_COM_TASK_PRIORITY, nullptr,
-				0);
+	xTaskCreatePinnedToCore(task_wireless_com_tx, "ESP", 4096, nullptr,
+				WIRELESS_COM_TASK_PRIORITY, nullptr, 0);
 #endif
 }
 
@@ -140,17 +140,11 @@ static void task_telemetry(void *pvParameters)
 
 static void task_wireless_com_tx(void *arg)
 {
-	TickType_t lastWakeTime = xTaskGetTickCount();
-
 	EspNowMessage msg;
 
 	for (;;) {
-		if (xQueueReceive(espnowQueue, &msg, portMAX_DELAY)) {
-			esp_now_send(peerAddress, (uint8_t *)msg.text,
-				     strlen(msg.text) + 1);
+		if (wireless_com_get_message(&msg, portMAX_DELAY)) {
+			wireless_com_transmit(msg.text);
 		}
-
-		vTaskDelayUntil(&lastWakeTime,
-				pdMS_TO_TICKS(WIRELESS_COM_PERIOD_MS));
 	}
 }
