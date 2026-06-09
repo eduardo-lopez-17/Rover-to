@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <Wire.h>
 #include <esp_now.h>
+#include "sensor_payload.h"
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
@@ -25,24 +26,6 @@
  * Payload — struct must be byte-identical on TX and RX sides.
  * Any field addition or reorder requires updating both nodes.
  * ========================================================================= */
-typedef struct __attribute__((packed)) {
-    uint32_t timestamp;
-    float    pos_x;
-    float    pos_y;
-    float    yaw_angle;
-    float    distance_cm;
-    float    gps_lat;
-    float    gps_lng;
-    float    env_temp_c;
-    float    env_humidity_pct;
-    float    env_pressure_hpa;
-    float    env_soil_moisture_pct;
-    float    pwr_voltage_v;
-    float    pwr_current_ma;
-    uint8_t  anomaly;
-    uint8_t  vision_obj_id;
-    uint8_t  vision_confidence;
-} SensorPayload;
 
 static SensorPayload tx_data;
 
@@ -287,8 +270,10 @@ void loop(void)
     tx_data.yaw_angle         = imu.valid ? imu.yaw_deg : 0.0f;
     tx_data.pos_x             = 0.0f;
     tx_data.pos_y             = 0.0f;
+    tx_data.vel_x             = 0.0f;   // <-- agrega
+    tx_data.vel_y             = 0.0f;   // <-- agrega
+    tx_data.flow_valid        = 0;      // <-- agrega
     tx_data.vision_confidence = 0;
-
     /* anomaly bit-flags: bit0=collision, bit1=shock, bit2=tilt */
     tx_data.anomaly = 0;
     if (tx_data.distance_cm > 0.1f && tx_data.distance_cm < 15.0f)

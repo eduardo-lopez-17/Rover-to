@@ -10,24 +10,7 @@
 /* =========================================================================
  * Payload — must be byte-identical to the TX side in main_telecom.cpp.
  * ========================================================================= */
-typedef struct __attribute__((packed)) {
-    uint32_t timestamp;
-    float    pos_x;
-    float    pos_y;
-    float    yaw_angle;
-    float    distance_cm;
-    float    gps_lat;
-    float    gps_lng;
-    float    env_temp_c;
-    float    env_humidity_pct;
-    float    env_pressure_hpa;
-    float    env_soil_moisture_pct;
-    float    pwr_voltage_v;
-    float    pwr_current_ma;
-    uint8_t  anomaly;
-    uint8_t  vision_obj_id;
-    uint8_t  vision_confidence;
-} SensorPayload;
+#include "sensor_payload.h"
 
 /* =========================================================================
  * Print helpers
@@ -37,6 +20,8 @@ static void print_payload(const SensorPayload *d, const char *channel)
     Serial.printf("\n[%s] t=%lums\n", channel, (unsigned long)d->timestamp);
     Serial.printf("  POS    x=%.2f m  y=%.2f m  yaw=%.1f deg\n",
                   d->pos_x, d->pos_y, d->yaw_angle);
+    Serial.printf("  VEL    vx=%.1f cm/s  vy=%.1f cm/s  flow=%s\n",  // <-- agrega
+                  d->vel_x, d->vel_y, d->flow_valid ? "OK" : "ERR"); // <-- agrega
     Serial.printf("  GPS    lat=%.6f  lng=%.6f\n",
                   d->gps_lat, d->gps_lng);
     Serial.printf("  ENV    T=%.1fC  H=%.0f%%  P=%.1f hPa  soil=%.0f%%\n",
