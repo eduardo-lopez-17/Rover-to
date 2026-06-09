@@ -47,11 +47,27 @@ void wireless_com_init()
 	}
 }
 
-bool wireless_com_transmit(const char *text)
+bool wireless_com_send_text(const char *fmt, ...)
 {
-	if (!text)
+	if (!espnowQueue)
 		return false;
 
-	return esp_now_send(peerAddress, (const uint8_t *)text,
-			    strlen(text) + 1) == ESP_OK;
+	EspNowMessage msg;
+
+	va_list args;
+	va_start(args, fmt);
+
+	vsnprintf(msg.text, sizeof(msg.text), fmt, args);
+
+	va_end(args);
+
+	return xQueueSend(espnowQueue, &msg, 0) == pdTRUE;
+}
+
+bool wireless_com_get_message(EspNowMessage *msg, TickType_t timeout)
+{
+	if (!espnowQueue)
+		return false;
+
+	return xQueueReceive(espnowQueue, msg, timeout) == pdTRUE;
 }

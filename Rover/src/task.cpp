@@ -144,7 +144,7 @@ static void task_wireless_com_tx(void *arg)
 
 	for (;;) {
 		if (wireless_com_get_message(&msg, portMAX_DELAY)) {
-			wireless_com_transmit(msg.text);
+			wireless_com_send_text("%s", msg.text);
 		}
 	}
 }
