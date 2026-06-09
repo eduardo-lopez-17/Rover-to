@@ -140,11 +140,34 @@ static void task_telemetry(void *pvParameters)
 
 static void task_wireless_com_tx(void *arg)
 {
-	EspNowMessage msg;
+    TickType_t lastWakeTime = xTaskGetTickCount();
 
-	for (;;) {
-		if (wireless_com_get_message(&msg, portMAX_DELAY)) {
-			wireless_com_transmit(msg.text);
-		}
-	}
+    for (;;) {
+        NavigationState nav = navigation_get();
+
+        SensorPayload payload = {};
+        payload.timestamp         = (uint32_t)millis();
+        payload.pos_x             = nav.posX;
+        payload.pos_y             = nav.posY;
+        payload.yaw_angle         = nav.yawDeg;
+
+        // Campos no disponibles en DSP — quedan en cero
+        payload.distance_cm          = 0.0f;
+        payload.gps_lat              = 0.0f;
+        payload.gps_lng              = 0.0f;
+        payload.env_temp_c           = 0.0f;
+        payload.env_humidity_pct     = 0.0f;
+        payload.env_pressure_hpa     = 0.0f;
+        payload.env_soil_moisture_pct = 0.0f;
+        payload.pwr_voltage_v        = 0.0f;
+        payload.pwr_current_ma       = 0.0f;
+        payload.anomaly              = 0;
+        payload.vision_obj_id        = 0;
+        payload.vision_confidence    = 0;
+
+        wireless_com_transmit_payload(&payload);
+
+        vTaskDelayUntil(&lastWakeTime,
+                        pdMS_TO_TICKS(WIRELESS_COM_PERIOD_MS));
+    }
 }
