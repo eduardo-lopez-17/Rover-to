@@ -47,7 +47,9 @@ void rfm69_init(void)
     s_radio.setTxPower(RF69_TX_POWER_DBM, true);
 
 #if USE_ENCRYPTION
-    s_radio.setEncryptionKey((const uint8_t *)AES_KEY_16);
+    uint8_t aes_buf[16];
+    memcpy(aes_buf, AES_KEY_16, 16);
+    s_radio.setEncryptionKey(aes_buf);
     Serial.printf("[RFM69] OK — %.1f MHz, %d dBm, AES-128 ON\n",
                   RF69_FREQ_MHZ, RF69_TX_POWER_DBM);
 #else

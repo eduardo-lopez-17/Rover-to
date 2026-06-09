@@ -97,13 +97,18 @@ static void oled_update(const SensorPayload *d)
                          (unsigned long)(d->timestamp / 1000), page + 1);
 
     switch (page) {
-    case 0: /* Environment + soil */
+    case 0: /* Environment + soil + light */
         s_display.setCursor(0, 14);
         s_display.printf("T:%.1fC H:%.0f%%", d->env_temp_c, d->env_humidity_pct);
         s_display.setCursor(0, 25);
-        s_display.printf("P:%.0fhPa", d->env_pressure_hpa);
+        s_display.printf("P:%.0fhPa Soil:%.0f%%",
+                         d->env_pressure_hpa, d->env_soil_moisture_pct);
         s_display.setCursor(0, 36);
-        s_display.printf("Soil: %.0f%%", d->env_soil_moisture_pct);
+#if USE_BH1750
+        s_display.printf("Luz: %.0f lux", bh1750_read_lux());
+#else
+        s_display.printf("Luz: N/A");
+#endif
         s_display.setCursor(0, 47);
         s_display.printf("Dist: %.1f cm", d->distance_cm);
         break;
@@ -137,7 +142,7 @@ static void oled_update(const SensorPayload *d)
 static void oled_blank(void)
 {
     if (!s_display_ok)
-        //return;
+        return;
     s_display.clearDisplay();
     s_display.display();
 }
@@ -311,10 +316,9 @@ void loop(void)
 #endif
 
     /* --- Display --------------------------------------------------------- */
-    if (millis() - s_last_presence_ms < DISPLAY_TIMEOUT_MS)
-        oled_update(&tx_data);
-    else
-        oled_blank();
+    /* Static monitoring node — always show data.
+     * Only blank on alarm clearance is handled by oled_update header line. */
+    oled_update(&tx_data);
 
     /* --- Transmit: ESP-NOW (short range) -------------------------------- */
 #if USE_ESPNOW
@@ -372,7 +376,7 @@ void loop(void)
         Serial.printf("  GPS    %.6f, %.6f\n", tx_data.gps_lat, tx_data.gps_lng);
 #endif
 #if USE_BH1750
-        Serial.printf("  LIGHT  (enabled)\n");
+        Serial.printf("  LIGHT  %.1f lux\n", bh1750_read_lux());
 #endif
 #if USE_VISION_SD
         if (tx_data.vision_obj_id)
