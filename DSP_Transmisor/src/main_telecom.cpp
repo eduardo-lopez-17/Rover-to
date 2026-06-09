@@ -270,9 +270,9 @@ void loop(void)
     tx_data.yaw_angle         = imu.valid ? imu.yaw_deg : 0.0f;
     tx_data.pos_x             = 0.0f;
     tx_data.pos_y             = 0.0f;
-    tx_data.vel_x             = 0.0f;   // <-- agrega
-    tx_data.vel_y             = 0.0f;   // <-- agrega
-    tx_data.flow_valid        = 0;      // <-- agrega
+    tx_data.vel_x             = 0.0f;   
+    tx_data.vel_y             = 0.0f;   
+    tx_data.flow_valid        = 0;     
     tx_data.vision_confidence = 0;
     /* anomaly bit-flags: bit0=collision, bit1=shock, bit2=tilt */
     tx_data.anomaly = 0;
