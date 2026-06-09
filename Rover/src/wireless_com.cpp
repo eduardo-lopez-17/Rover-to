@@ -5,6 +5,7 @@
  */
 
 #include "wireless_com.h"
+#include "sensor_payload.h"
 
 #include "config.h"
 
@@ -20,6 +21,7 @@ void wireless_com_init()
 {
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect();
+	esp_now_set_pmk((const uint8_t *)"PlantioSecKey123");
 
 	if (esp_now_init() != ESP_OK) {
 		Serial.println("Error initializing ESP-NOW");
@@ -54,4 +56,22 @@ bool wireless_com_transmit(const char *text)
 
 	return esp_now_send(peerAddress, (const uint8_t *)text,
 			    strlen(text) + 1) == ESP_OK;
+}
+
+bool wireless_com_transmit_payload(const SensorPayload *payload)
+{
+	static const uint8_t peer_mac[] = WIRELESS_COM_BROADCAST_ADDRESS;
+
+	if (!esp_now_is_peer_exist(peer_mac)) {
+		esp_now_peer_info_t peer = {};
+		memcpy(peer.peer_addr, peer_mac, 6);
+		peer.channel = 0;
+		peer.encrypt = true;
+		memcpy(peer.lmk, "PlantioSecKey123", 16);
+		esp_now_add_peer(&peer);
+	}
+
+	esp_err_t result = esp_now_send(peer_mac, (const uint8_t *)payload,
+					sizeof(SensorPayload));
+	return result == ESP_OK;
 }

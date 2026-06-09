@@ -4,6 +4,7 @@
 #include "flow.h"
 #include "imu.h"
 #include "navigation.h"
+#include "sensor_payload.h"
 #include "serial.h"
 #include "wireless_com.h"
 
@@ -140,34 +141,37 @@ static void task_telemetry(void *pvParameters)
 
 static void task_wireless_com_tx(void *arg)
 {
-    TickType_t lastWakeTime = xTaskGetTickCount();
+	TickType_t lastWakeTime = xTaskGetTickCount();
 
-    for (;;) {
-        NavigationState nav = navigation_get();
+	for (;;) {
+		NavigationState nav = navigation_get();
 
-        SensorPayload payload = {};
-        payload.timestamp         = (uint32_t)millis();
-        payload.pos_x             = nav.posX;
-        payload.pos_y             = nav.posY;
-        payload.yaw_angle         = nav.yawDeg;
+		SensorPayload payload = {};
+		payload.timestamp = (uint32_t)millis();
+		payload.pos_x = nav.posX;
+		payload.pos_y = nav.posY;
+		payload.yaw_angle = nav.yawDeg;
+		payload.vel_x = nav.velX;
+		payload.vel_y = nav.velY;
+		payload.flow_valid = nav.flowValid ? 1 : 0;
 
-        // Campos no disponibles en DSP — quedan en cero
-        payload.distance_cm          = 0.0f;
-        payload.gps_lat              = 0.0f;
-        payload.gps_lng              = 0.0f;
-        payload.env_temp_c           = 0.0f;
-        payload.env_humidity_pct     = 0.0f;
-        payload.env_pressure_hpa     = 0.0f;
-        payload.env_soil_moisture_pct = 0.0f;
-        payload.pwr_voltage_v        = 0.0f;
-        payload.pwr_current_ma       = 0.0f;
-        payload.anomaly              = 0;
-        payload.vision_obj_id        = 0;
-        payload.vision_confidence    = 0;
+		// Campos sin sensor en DSP — quedan en cero
+		payload.distance_cm = 0.0f;
+		payload.gps_lat = 0.0f;
+		payload.gps_lng = 0.0f;
+		payload.env_temp_c = 0.0f;
+		payload.env_humidity_pct = 0.0f;
+		payload.env_pressure_hpa = 0.0f;
+		payload.env_soil_moisture_pct = 0.0f;
+		payload.pwr_voltage_v = 0.0f;
+		payload.pwr_current_ma = 0.0f;
+		payload.anomaly = 0;
+		payload.vision_obj_id = 0;
+		payload.vision_confidence = 0;
 
-        wireless_com_transmit_payload(&payload);
+		wireless_com_transmit_payload(&payload);
 
-        vTaskDelayUntil(&lastWakeTime,
-                        pdMS_TO_TICKS(WIRELESS_COM_PERIOD_MS));
-    }
+		vTaskDelayUntil(&lastWakeTime,
+				pdMS_TO_TICKS(WIRELESS_COM_PERIOD_MS));
+	}
 }
