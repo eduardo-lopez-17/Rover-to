@@ -81,7 +81,7 @@
 // Optical flow scale (pixels to m/s conversion)
 #define VIO_FLOW_SCALE BASE_FLOW_SCALE *FACTOR_CORRECCION
 #define BASE_FLOW_SCALE 0.0018f
-#define FACTOR_CORRECCION 0.608f
+#define FACTOR_CORRECCION 0.5259515570934256055363321799308f
 
 /// =====================================================
 /// TELEMETRY CONFIGURATION
